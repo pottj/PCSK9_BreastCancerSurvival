@@ -16,7 +16,7 @@ Publication in December 2024 from [Wenbin Mei et al.](https://doi.org/10.1016/j.
 
 ## Data
 
-- PCSK9 in females (my 2024 paper, statin-adjusted and statin-free)
+- PCSK9 in females (my 2024 paper, statin-adjusted and statin-free), downloaded from [Zenodo](https://zenodo.org/records/10600167)
 - PCSK9 in relevant tissues (GTEx v8, use temp files from my 2024 project): 
     - liver, 
     - brain (cerebellar hemisphere), 

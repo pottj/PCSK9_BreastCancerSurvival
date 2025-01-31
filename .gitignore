@@ -54,3 +54,4 @@ SourceFile.R
 *.html
 _tests/
 scripts/*test*.R
+Script_template.R
