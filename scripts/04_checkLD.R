@@ -20,6 +20,7 @@
 rm(list = ls())
 time0<-Sys.time()
 server = "laptop_BSU"
+load_meta = F
 
 source("../SourceFile.R")
 .libPaths()
@@ -225,30 +226,30 @@ print(data$rsID,quote = F)
 setorder(data,pval)
 print(data$rsID,quote = F)
 
-#' There are 4 cluster, and the 4 best signals are rs11591147, rs28385704, rs472495, and rs2495491 (pairwise LD r2 < 0.6)
+#' There are 4 cluster, and the 4 best signals are rs11591147, rs28385704, rs472495, and rs2495491 (pairwise LD r2 < 0.6). But I want to use the same SNPs throughout for my pQTLs. Hence I stick to rs11591147, rs693668, rs11583680, and rs2495491.
 #' 
-IVData[phenotype == myTraits[7] & rsID %in% c("rs11591147","rs28385704","rs472495","rs2495491"),flag := T] 
+IVData[phenotype == myTraits[7] & rsID %in% c("rs11591147","rs693668","rs11583680","rs2495491"),flag := T] 
 IVData[flag == T,]
 
-dumTab7 = data.table(SNP1 = c(rep("rs2495491",3),rep("rs11591147",2),"rs28385704"),
+dumTab7 = data.table(SNP1 = c(rep("rs2495491",3),rep("rs11591147",2),"rs11583680"),
                      OA1 = c(rep("G",3), rep("G",2),"C"),
-                     EA1 = c(rep("T",3), rep("T",2),"G"),
-                     SNP2 = c("rs11591147","rs28385704","rs472495",
-                              "rs28385704","rs472495",
-                              "rs472495"), 
-                     OA2 = c("G","C","G",  "C","G", "G"),
-                     EA2 = c("T","G","T",  "G","T", "T"),
-                     p00 = c(0.247, 0.243, 0.058,
-                             0.841, 0.365,
-                             0.294),
-                     p0x = c(rep(0.247,3),rep(0.979,2),0.862),
-                     p1x = c(rep(0.753,3),rep(0.021,2),0.138),
-                     px0 = c(0.979, 0.862, 0.375,
-                             0.862, 0.375, 
-                             0.375), 
-                     px1 = c(0.021, 0.138, 0.625,
-                             0.138, 0.625, 
-                             0.625))
+                     EA1 = c(rep("T",3), rep("T",2),"T"),
+                     SNP2 = c("rs11591147","rs11583680","rs693668",
+                              "rs11583680","rs693668",
+                              "rs693668"), 
+                     OA2 = c("G","C","A",  "C","A", "A"),
+                     EA2 = c("T","T","G",  "T","G", "G"),
+                     p00 = c(0.247, 0.243, 0.189,
+                             0.845, 0.614,
+                             0.572),
+                     p0x = c(rep(0.247,3),rep(0.979,2),0.866),
+                     p1x = c(rep(0.753,3),rep(0.021,2),0.134),
+                     px0 = c(0.979, 0.866, 0.625,
+                             0.866, 0.625, 
+                             0.625), 
+                     px1 = c(0.021, 0.134, 0.375,
+                             0.134, 0.375, 
+                             0.375))
 dumTab7
 
 #' ## Setting 2: females statin-free
@@ -259,29 +260,29 @@ print(data$rsID,quote = F)
 setorder(data,pval)
 print(data$rsID,quote = F)
 
-#' There are 4 cluster, and the 4 best signals are rs11591147, rs28385704, rs693668, and rs2495491 (pairwise LD r2 < 0.6)
+#' There are 4 cluster, and the 4 best signals are rs11591147, rs28385704, rs693668, and rs2495491 (pairwise LD r2 < 0.6). But I want to use the same SNPs throughout for my pQTLs. Hence I stick to rs11591147, rs693668, rs11583680, and rs2495491.
 #' 
-IVData[phenotype == myTraits[8] & rsID %in% c("rs11591147","rs28385704","rs693668","rs2495491"),flag := T] 
+IVData[phenotype == myTraits[8] & rsID %in% c("rs11591147","rs693668","rs11583680","rs2495491"),flag := T] 
 IVData[flag == T,]
 
-dumTab8 = data.table(SNP1 = c(rep("rs2495491",3),rep("rs11591147",2),"rs28385704"),
+dumTab8 = data.table(SNP1 = c(rep("rs2495491",3),rep("rs11591147",2),"rs11583680"),
                      OA1 = c(rep("G",3), rep("G",2),"C"),
-                     EA1 = c(rep("T",3), rep("T",2),"G"),
-                     SNP2 = c("rs11591147","rs28385704","rs693668",
-                              "rs28385704","rs693668",
+                     EA1 = c(rep("T",3), rep("T",2),"T"),
+                     SNP2 = c("rs11591147","rs11583680","rs693668",
+                              "rs11583680","rs693668",
                               "rs693668"), 
                      OA2 = c("G","C","A",  "C","A", "A"),
-                     EA2 = c("T","G","G",  "G","G", "G"),
+                     EA2 = c("T","T","G",  "T","G", "G"),
                      p00 = c(0.247, 0.243, 0.189,
-                             0.841, 0.614,
-                             0.568),
-                     p0x = c(rep(0.247,3),rep(0.979,2),0.862),
-                     p1x = c(rep(0.753,3),rep(0.021,2),0.138),
-                     px0 = c(0.979, 0.862, 0.625,
-                             0.862, 0.625, 
+                             0.845, 0.614,
+                             0.572),
+                     p0x = c(rep(0.247,3),rep(0.979,2),0.866),
+                     p1x = c(rep(0.753,3),rep(0.021,2),0.134),
+                     px0 = c(0.979, 0.866, 0.625,
+                             0.866, 0.625, 
                              0.625), 
-                     px1 = c(0.021, 0.138, 0.375,
-                             0.138, 0.375, 
+                     px1 = c(0.021, 0.134, 0.375,
+                             0.134, 0.375, 
                              0.375))
 dumTab8
 

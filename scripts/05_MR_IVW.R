@@ -20,6 +20,7 @@
 rm(list = ls())
 time0<-Sys.time()
 server = "laptop_BSU"
+load_meta = F
 
 source("../SourceFile.R")
 .libPaths()
@@ -63,16 +64,16 @@ dumTab1 = foreach(i = 1:length(myTraits))%do%{
         
       }else{
         # correlation matrix
-        dumTab2 = copy(dumTab)
-        dumTab2 = dumTab2[phenotype == myTraits[i]]
-        dumTab2 = dumTab2[SNP1 %in% exposure2$rsID & SNP2 %in% exposure2$rsID,]
+        dumTab3 = copy(dumTab)
+        dumTab3 = dumTab3[phenotype == myTraits[i]]
+        dumTab3 = dumTab3[SNP1 %in% exposure2$rsID & SNP2 %in% exposure2$rsID,]
         
         dumMatrix = diag(nrow = nSNPs,ncol=nSNPs)
-        dumMatrix[lower.tri(dumMatrix)] = dumTab2$r
+        dumMatrix[lower.tri(dumMatrix)] = dumTab3$r
         dumMatrix = t(dumMatrix)
-        dumMatrix[lower.tri(dumMatrix)] = dumTab2$r
-        EA_cormatrix = c(dumTab2$EA1[1],dumTab2$EA2[1:(nSNPs-1)])
-        SNPs_cormatrix = c(dumTab2$SNP1[1],dumTab2$SNP2[1:(nSNPs-1)])
+        dumMatrix[lower.tri(dumMatrix)] = dumTab3$r
+        EA_cormatrix = c(dumTab3$EA1[1],dumTab3$EA2[1:(nSNPs-1)])
+        SNPs_cormatrix = c(dumTab3$SNP1[1],dumTab3$SNP2[1:(nSNPs-1)])
         stopifnot(SNPs_cormatrix == exposure2$rsID)
         filt = EA_cormatrix != exposure2$EA
         exposure2[filt,beta := beta*(-1)]

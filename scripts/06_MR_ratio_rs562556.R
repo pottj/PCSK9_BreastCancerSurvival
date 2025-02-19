@@ -20,6 +20,7 @@
 rm(list = ls())
 time0<-Sys.time()
 server = "laptop_BSU"
+load_meta = F
 
 source("../SourceFile.R")
 .libPaths()
@@ -98,7 +99,7 @@ setnames(BC_FinnGen_UKB,"#CHR","CHR")
 BC_FinnGen_UKB = BC_FinnGen_UKB[CHR == 1,]
 BC_FinnGen_UKB = BC_FinnGen_UKB[POS %in% IVData$pos_b38,]
 
-#' reformate BCAC
+#' reformat BCAC
 BCAC[, rsID := "rs562556"]
 BCAC[,pos_b38 := BC_FinnGen_UKB$POS]
 names(BCAC)
@@ -225,6 +226,8 @@ plotData$`Estimate \n[95% CI]` <- ifelse(is.na(plotData$se_IV2), "",
 setorder(plotData,beta_IV)
 plotData$phenotype
 plotData$Exposure = c("GE (brain, cerebellum)",
+                      "GE (esophagus muscularis)",
+                      "GE (spleen)",
                       "PE (men, statin-treated)",
                       "PE (men)",
                       "PE (men, statin-free)",
@@ -234,7 +237,7 @@ plotData$Exposure = c("GE (brain, cerebellum)",
                       "PE (women)")
 
 setnames(plotData,"Exposure","Exposure subgroups")
-p2<- forest(plotData[,c(29,27,28)],
+p2<- forest(plotData[,c(30,28,29)],
             est = plotData$beta_IV,
             lower = plotData$lowerCI95, 
             upper = plotData$upperCI95,
@@ -269,6 +272,8 @@ plotData$`Estimate \n[95% CI]` <- ifelse(is.na(plotData$se_IV2), "",
 setorder(plotData,-beta_IV)
 plotData$phenotype
 plotData$Exposure = c("GE (brain, cerebellum)",
+                      "GE (esophagus muscularis)",
+                      "GE (spleen)",
                       "PE (men, statin-treated)",
                       "PE (men)",
                       "PE (men, statin-free)",
@@ -278,7 +283,7 @@ plotData$Exposure = c("GE (brain, cerebellum)",
                       "PE (women)")
 
 setnames(plotData,"Exposure","Exposure subgroups")
-p2<- forest(plotData[,c(29,27,28)],
+p2<- forest(plotData[,c(30,28,29)],
             est = plotData$beta_IV,
             lower = plotData$lowerCI95, 
             upper = plotData$upperCI95,
