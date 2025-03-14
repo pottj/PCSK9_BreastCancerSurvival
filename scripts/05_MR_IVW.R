@@ -37,12 +37,12 @@ myTraits = unique(IVData$phenotype)
 myOutcomes = unique(outcomeData$phenotype)
 
 dumTab1 = foreach(i = 1:length(myTraits))%do%{
-  #i=1
+  #i=9
   exposure = copy(IVData)
   exposure = exposure[phenotype == myTraits[i],]
   
   dumTab2 = foreach(j = 1:length(myOutcomes))%do%{
-    #j=1
+    #j=8
     outcome = copy(outcomeData)
     outcome = outcome[phenotype == myOutcomes[j],]
     outcome = outcome[rsID %in% exposure$rsID,]
@@ -97,7 +97,9 @@ dumTab1 = foreach(i = 1:length(myTraits))%do%{
                        beta_IVW = mod1@Estimate,
                        se_IVW = mod1@StdError,
                        pval_IVW = mod1@Pvalue,
-                       FStat = mod1@Fstat)
+                       FStat = mod1@Fstat, 
+                       Q = mod1@Heter.Stat[1],
+                       pval_Q = mod1@Heter.Stat[2])
       res
       
     }
@@ -106,6 +108,8 @@ dumTab1 = foreach(i = 1:length(myTraits))%do%{
   res1
 }
 MR_IVW = rbindlist(dumTab1)
+MR_IVW[pval_IVW <0.05]
+MR_IVW[pval_IVW <0.1]
 
 #' # Save data ####
 #' ***

@@ -165,8 +165,32 @@ head(BC3)
 names(BC3) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
                "phenotype","EAF","nSamples","nCases","beta","se","pval")
 
+#' ## Longevity
+ParentalLongevity = fread(GWAS_data_GWASCatalog1)
+ParentalLongevity_Death = fread(GWAS_data_GWASCatalog2)
+ParentalLongevity = ParentalLongevity[hm_chrom == 1,]
+ParentalLongevity = ParentalLongevity[hm_pos %in% IVData$pos_b38,]
+ParentalLongevity_Death = ParentalLongevity_Death[hm_chrom == 1,]
+ParentalLongevity_Death = ParentalLongevity_Death[hm_pos %in% IVData$pos_b38,]
+
+ParentalLongevity[, pos_b37 := 55524237 ]
+ParentalLongevity[, phenotype := "Parents' attained age"]
+ParentalLongevity[, nSamples := 389166 ]
+
+ParentalLongevity = ParentalLongevity[,c(2,3,25,4,5,6,26,11,27,7,20,21)]
+names(ParentalLongevity) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
+                             "phenotype","EAF","nSamples","beta","se","pval")
+
+ParentalLongevity_Death[, pos_b37 := 55524237 ]
+ParentalLongevity_Death[, phenotype := "Parents' age at death"]
+ParentalLongevity_Death[, nSamples := 208118 ]
+
+ParentalLongevity_Death = ParentalLongevity_Death[,c(2,3,25,4,5,6,26,11,27,7,20,21)]
+names(ParentalLongevity_Death) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
+                                   "phenotype","EAF","nSamples","beta","se","pval")
+
 #' Merge data sets info one data table
-outcomeData = rbind(BC3, BC1, BC2, BCAC3,BCAC1,BCAC2,fill=T)
+outcomeData = rbind(BC3, BC1, BC2, BCAC3,BCAC1,BCAC2,ParentalLongevity, ParentalLongevity_Death,fill=T)
 outcomeData[is.na(beta)]
 outcomeData[beta==0,]
 
