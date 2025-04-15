@@ -30,11 +30,11 @@ source("../SourceFile.R")
 #' ***
 BCAC = fread(GWAS_data_BCAC)
 
-BC_FinnGen_UKB = fread(GWAS_data_finngen)
+BC_FinnGen_UKB = fread(GWAS_data_finngen_BC)
 
-ParentalLongevity = fread(GWAS_data_GWASCatalog1)
+ParentalLongevity_Death = fread(GWAS_data_GWASCatalog)
 
-ParentalLongevity_Death = fread(GWAS_data_GWASCatalog2)
+CAD = fread(GWAS_data_finngen_CAD)
 
 load("../results/02_potentialIVs.RData")
 
@@ -65,7 +65,6 @@ IVData[pos_b38 %in% BC_FinnGen_UKB[rsid != IVData[matched,rsID],POS],]
 #' 
 #' - rs115749208 (IVData) has merged into rs111835689 (FinnGen & UKB)
 #' - rs149790879 has merged into rs3118722
-#' - rs113675231 has merged into rs3118721 (rs145663020 not found?!)
 #' - rs201732208 has merged into rs4500361
 #' - rs370423508 has merged into rs59267263
 #' 
@@ -80,34 +79,42 @@ matched = match(BCAC$position,IVData$pos_b37)
 BCAC[,rsID := IVData[matched,rsID]]
 
 #' Check Longevity (in hg38)
-ParentalLongevity
-ParentalLongevity = ParentalLongevity[hm_chrom == 1,]
-ParentalLongevity = ParentalLongevity[hm_pos %in% IVData$pos_b38,]
-
-#' Check Longevity (in hg38)
 ParentalLongevity_Death
 ParentalLongevity_Death = ParentalLongevity_Death[hm_chrom == 1,]
 ParentalLongevity_Death = ParentalLongevity_Death[hm_pos %in% IVData$pos_b38,]
 
+#' Aragam CAD sex-stratified meta is given in b37
+CAD
+setnames(CAD,"#CHR","CHR")
+CAD = CAD[CHR == 1,]
+CAD = CAD[POS %in% IVData$pos_b38,]
+CAD[duplicated(POS)]
+table(is.na(CAD$rsid))
+CAD = CAD[!is.na(rsid),]
+
 #' # Check alleles ####
 #' ***
+BC_FinnGen_UKB = BC_FinnGen_UKB[rsid %in% BCAC$rsID,]
+CAD = CAD[rsid %in% BCAC$rsID,]
+
 table(BCAC$rsID == BC_FinnGen_UKB$rsid)
 table(BCAC$a1 == BC_FinnGen_UKB$ALT)
 plot(BCAC$eaf_a1_onco,BC_FinnGen_UKB$FINNGEN_af_alt)
 plot(BCAC$eaf_a1_onco,BC_FinnGen_UKB$UKBB_af_alt)
 
+table(BCAC$rsID == CAD$rsid)
+table(BCAC$a1 == CAD$ALT)
+plot(BCAC$eaf_a1_onco,CAD$FINNGEN_af_alt)
+plot(BCAC$eaf_a1_onco,CAD$UKBB_af_alt)
+
 SNPList = copy(IVData)
 setorder(SNPList,pos_b38)
 SNPList = SNPList[!duplicated(pos_b38)]
+SNPList = SNPList[rsID %in% BCAC$rsID,]
 table(BCAC$a1 == SNPList$EA)
 plot(BCAC$eaf_a1_onco,SNPList$EAF)
 plot(BC_FinnGen_UKB$UKBB_af_alt,SNPList$EAF)
-
-matched = match(SNPList$rsID,ParentalLongevity$hm_rsid)
-table(is.na(matched))
-plot(ParentalLongevity$hm_effect_allele_frequency[matched],SNPList$EAF)
-abline(0,1)
-abline(1,-1)
+plot(CAD$UKBB_af_alt,SNPList$EAF)
 
 matched = match(SNPList$rsID,ParentalLongevity_Death$hm_rsid)
 table(is.na(matched))
@@ -121,41 +128,29 @@ abline(1,-1)
 #' ***
 #' Now I want my outcome data set in a long format. Same columns as for the exposure (plus info for number of cases if possible). I want to split the data into 6 outcomes: 
 #' 
-#' - BC survival (BCS): onco, cogs, meta
-#' - BC prevalence (BCP): FinnGen, UKB, meta
+#' - BC survival (BCS): meta only
+#' - Breast cancer (BC): meta only
+#' - Coronary atherosclerosis (CAD): meta only
+#' - Parental age at death (PAAD): UKB only
 #' 
 names(IVData)
 
 #' ## BCAC data
-#' I do not know the sample size per array, but I found the sample size for the main analysis in the Supplemental Table S3 of [Morra et al., 2021](https://breast-cancer-research.biomedcentral.com/articles/10.1186/s13058-021-01450-7#availability-of-data-and-materials)
+#' I extracted the sample size and breast cancer specific deaths from the abstract of [Morra et al., 2021](https://breast-cancer-research.biomedcentral.com/articles/10.1186/s13058-021-01450-7)
 #' 
 BCAC[,pos_b38 := SNPList$pos_b38]
 names(BCAC)
 
-BCAC1 = copy(BCAC)
-BCAC1[,phenotype := "BCS_cogs"]
-BCAC1 = BCAC1[,c(18,2,3,19,4,5, 20,6,8,9,10)]
-head(BCAC1)
-names(BCAC1) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-                 "phenotype","EAF","beta","se","pval")
-
-BCAC2 = copy(BCAC)
-BCAC2[,phenotype := "BCS_onco"]
-BCAC2 = BCAC2[,c(18,2,3,19,4,5, 20,7,11,12,13)]
-head(BCAC2)
-names(BCAC2) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-                 "phenotype","EAF","beta","se","pval")
-
-BCAC3 = copy(BCAC)
-BCAC3[,phenotype := "BCS_meta"]
-BCAC3[,nSamples := 99217]
-BCAC3[,EAF := (eaf_a1_cogs+eaf_a1_onco)/2]
-BCAC3[eaf_a1_cogs==0,EAF := eaf_a1_onco]
-BCAC3[eaf_a1_onco==0,EAF := eaf_a1_cogs]
-BCAC3 = BCAC3[,c(18,2,3,19,4,5, 20,22,21,14,15,16)]
-head(BCAC3)
-names(BCAC3) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-                 "phenotype","EAF","nSamples","beta","se","pval")
+BCAC[,phenotype := "BCS"]
+BCAC[,nSamples := 91686 + 7531]
+BCAC[,nCases := 7531]
+BCAC[,EAF := (eaf_a1_cogs+eaf_a1_onco)/2]
+BCAC[eaf_a1_cogs==0,EAF := eaf_a1_onco]
+BCAC[eaf_a1_onco==0,EAF := eaf_a1_cogs]
+BCAC = BCAC[,c(18,2,3,19,4,5, 20,23,21,22,14,15,16)]
+head(BCAC)
+names(BCAC) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
+                 "phenotype","EAF","nSamples","nCases","beta","se","pval")
 
 #' ## BC data 
 #' 
@@ -167,48 +162,15 @@ names(BC_FinnGen_UKB)
 BC_FinnGen_UKB[,pos_b37 := SNPList$pos_b37]
 names(BC_FinnGen_UKB)
 
-BC1 = copy(BC_FinnGen_UKB)
-BC1[,phenotype := "BCP_FinnGen"]
-BC1[,nSamples := 18786 + 182927]
-BC1[,nCases := 18786]
-BC1 = BC1[,c(22,1,23,2,3,4,  24,9,25,26,6,7,8)]
-head(BC1)
-names(BC1) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
+BC_FinnGen_UKB[,phenotype := "BC"]
+BC_FinnGen_UKB[,nSamples := 11807 + 205913 + 18786 + 182927]
+BC_FinnGen_UKB[,nCases := 11807 + 18786]
+BC_FinnGen_UKB[,EAF := (FINNGEN_af_alt+UKBB_af_alt)/2]
+BC_FinnGen_UKB[is.na(FINNGEN_af_alt),EAF := UKBB_af_alt]
+BC_FinnGen_UKB = BC_FinnGen_UKB[,c(22,1,23,2,3,4,  24,27,25,26,17,18,19)]
+head(BC_FinnGen_UKB)
+names(BC_FinnGen_UKB) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
                "phenotype","EAF","nSamples","nCases","beta","se","pval")
-
-BC2 = copy(BC_FinnGen_UKB)
-BC2[,phenotype := "BCP_UKB"]
-BC2[,nSamples := 11807 + 205913]
-BC2[,nCases := 11807]
-BC2 = BC2[,c(22,1,23,2,3,4,  24,15,25,26,12,13,14)]
-head(BC2)
-names(BC2) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-               "phenotype","EAF","nSamples","nCases","beta","se","pval")
-
-BC3 = copy(BC_FinnGen_UKB)
-BC3[,phenotype := "BCP_meta"]
-BC3[,nSamples := 11807 + 205913 + 18786 + 182927]
-BC3[,nCases := 11807 + 18786]
-BC3[,EAF := (FINNGEN_af_alt+UKBB_af_alt)/2]
-BC3[is.na(FINNGEN_af_alt),EAF := UKBB_af_alt]
-BC3 = BC3[,c(22,1,23,2,3,4,  24,27,25,26,17,18,19)]
-head(BC3)
-names(BC3) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-               "phenotype","EAF","nSamples","nCases","beta","se","pval")
-
-#' ## Parental longevity data 
-#' 
-names(IVData)
-names(ParentalLongevity)
-
-matched = match(ParentalLongevity$hm_rsid,SNPList$rsID)
-ParentalLongevity[, pos_b37 := SNPList$pos_b37[matched] ]
-ParentalLongevity[, phenotype := "Parents' attained age"]
-ParentalLongevity[, nSamples := 389166 ]
-
-ParentalLongevity = ParentalLongevity[,c(2,3,25,4,5,6,26,11,27,7,20,21)]
-names(ParentalLongevity) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-               "phenotype","EAF","nSamples","beta","se","pval")
 
 #' ## Parental longevity of parents death data 
 #' 
@@ -217,16 +179,36 @@ names(ParentalLongevity_Death)
 
 matched = match(ParentalLongevity_Death$hm_rsid,SNPList$rsID)
 ParentalLongevity_Death[, pos_b37 := SNPList$pos_b37[matched] ]
-ParentalLongevity_Death[, phenotype := "Parents' age at death"]
+ParentalLongevity_Death[, phenotype := "PAAD"]
 ParentalLongevity_Death[, nSamples := 208118 ]
 
 ParentalLongevity_Death = ParentalLongevity_Death[,c(2,3,25,4,5,6,26,11,27,7,20,21)]
 names(ParentalLongevity_Death) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
                              "phenotype","EAF","nSamples","beta","se","pval")
 
+#' ## CAD data 
+#' 
+names(IVData)
+names(CAD)
+
+#' Sample sizes are taken from the [FinnGen + UKB webpage](https://public-metaresults-fg-ukbb.finngen.fi/) (filtering for "Coronary atherosclerosis")
+#' 
+CAD[,pos_b37 := SNPList$pos_b37]
+names(CAD)
+
+CAD[,phenotype := "CAD"]
+CAD[,nSamples := 51589 + 31198 + 343079 + 382052]
+CAD[,nCases := 51589 + 31198]
+CAD[,EAF := (FINNGEN_af_alt+UKBB_af_alt)/2]
+CAD[is.na(FINNGEN_af_alt),EAF := UKBB_af_alt]
+CAD = CAD[,c(22,1,23,2,3,4,  24,27,25,26,17,18,19)]
+head(CAD)
+names(CAD) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
+               "phenotype","EAF","nSamples","nCases","beta","se","pval")
+
 
 #' Merge data sets info one data table
-outcomeData = rbind(BC3, BC1, BC2, BCAC3,BCAC1,BCAC2, ParentalLongevity, ParentalLongevity_Death,fill=T)
+outcomeData = rbind(BCAC, BC_FinnGen_UKB, ParentalLongevity_Death, CAD,fill=T)
 outcomeData[is.na(beta)]
 outcomeData[beta==0,]
 

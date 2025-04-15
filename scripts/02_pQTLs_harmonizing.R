@@ -34,7 +34,7 @@ source("../SourceFile.R")
 myFiles = list.files(path = GWAS_data_PCSK9_pQTLs)
 myFiles
 myFiles = myFiles[!grepl("gz",myFiles)]
-myFiles = myFiles[c(1,2,4)]
+myFiles = myFiles[c(1,4)]
 myFiles
 
 dumTab1 = foreach(i = 1:length(myFiles))%do%{
@@ -52,7 +52,7 @@ pQTLData[,min(pval,na.rm = T),by=phenotype]
 pQTLData = pQTLData[!is.na(pval),]
 pQTLData[, rsID := gsub(":.*","",markername)]
 
-#' Okay, for all three data sets I have some genome-wide significant hits. I will use the independent signals as described in my paper. 
+#' Okay, for both data sets I have some genome-wide significant hits. I will use the independent signals as described in my previous paper. 
 #' 
 #' # Harmonize data ####
 #' ***
@@ -69,14 +69,14 @@ pQTLData[, rsID := gsub(":.*","",markername)]
 load("../temp/GTExV8_potentialIVs.RData")
 table(is.element(GTExData$pos_b37, pQTLData$bp_hg19))
 
-#' Okay, only 1 SNP cannot be found. I will look-up its rsID manually in the [GTEx data portal](https://gtexportal.org/home/) (using *variant_id_b38*). I will also do this for any variant without rsID in the pQTL data (will have rsID == 1)
+#' Okay, only 3 SNP cannot be found. I will look-up its rsID manually in the [GTEx data portal](https://gtexportal.org/home/) (using *variant_id_b38*). I will also do this for any variant without rsID in the pQTL data (will have rsID == 1)
 #' 
 matched = match(GTExData$pos_b37,pQTLData$bp_hg19)
 GTExData[,rsID := pQTLData[matched,rsID]]
 GTExData[rsID == 1,]
 GTExData[rsID == 1, rsID := "rs536607133"]
 GTExData[is.na(rsID),]
-GTExData[is.na(rsID), rsID := "rs41294823"]
+GTExData[is.na(rsID), rsID := c("rs41294823","rs35595930","rs35595930")]
 
 #' Now I add the effect allele as reported in my pQTL data. I only do this so I can generate the EAF instead of the MAF. 
 #' 
@@ -109,10 +109,9 @@ names(eQTLData)
 load("../temp/GTExV8_selectedTissues_PCSK9.RData")
 pQTLData = pQTLData[pval<1e-6,]
 
-#' From my meta-GWAS: these were the independent variants according to GCTA COJO slct (*03_GCTA_COJO.R*)
+#' From my meta-GWAS: these were the independent variants according to GCTA COJO slct (*03_GCTA_COJO.R*) or the missense mutation reported by Mei et al.
 #' 
-pQTLData = pQTLData[rsID %in% c("rs2495491","rs11591147","rs11583680","rs28385704",
-                                "rs2495477", "rs472495","rs693668")]
+pQTLData = pQTLData[rsID %in% c("rs2495491","rs11591147","rs11583680","rs693668","rs562556")]
 matched = match(pQTLData$bp_hg19,GTExData$pos_b37)
 table(is.na(matched))
 
@@ -126,6 +125,7 @@ names(pQTLData)
 pQTLData = pQTLData[, c(17,2,3,18,5,4, 16,6,8,10,11,12)]
 head(pQTLData)
 pQTLData[,max(pval,na.rm = T),by=phenotype]
+pQTLData[,min(pval,na.rm = T),by=phenotype]
 
 #' # Save data ####
 #' ***

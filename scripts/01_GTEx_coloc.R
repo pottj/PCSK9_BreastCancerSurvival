@@ -15,7 +15,7 @@
 #' ***
 #' In this script, I load the GTEx v8 data as generated in the [sex- and statin-stratified meta-GWAS project](https://github.com/GenStatLeipzig/GWAMA_PCSK9_strat) (script *05_1_coloc_get_eQTL_data.R*) 
 #' 
-#' I will first load each data set, filter for PCSK9 gene, get the number of genome-wide significant SNPs (potential IVs), and the perform one hypercoloc approach, to check how similar the signals are. Finally, I save the genome-wide significant eQTLs for later use. 
+#' I will first load each data set, filter for PCSK9 gene, get the number of suggestive-significant SNPs (potential IVs), and the perform one hypercoloc approach, to check how similar the signals are. Finally, I save the suggestive-significant eQTLs for later use. 
 #' 
 #' # Initialize ####
 #' ***
@@ -39,8 +39,8 @@ dumTab1 = foreach(i = 1:length(myFiles))%do%{
   data0
 }
 GTExData = rbindlist(dumTab1)
-GTExData[,table(tissue,pval<5e-8)]
-GTExData[,table(tissue,pval<1e-6)]
+GTExData[pval<5e-8,.N,by=tissue]
+GTExData[pval<1e-6,.N,by=tissue]
 GTExData[,min(pval),by=tissue]
 
 #' Although expressed in these tissues, there is not always a strong instrument. Colon (transverse), esophagus (mucosa), and small intestine (terminal ileum) have no eQTLs with at least suggestive significance. Liver and pancreas lack of genome-wide significant SNPs (p<5e-8), but have at least suggestive significant eQTLs (p<1e-6).
@@ -103,7 +103,7 @@ ColocResults[PP.H3.abf>0.5,]
 #' 
 #' 1. trio of brain (cerebellar hemisphere), brain (cerebellum), and pancreas, which share the same signal, 
 #' 2. pair of lung and nerve (tibial), which share the same signal
-#' 3. liver, which does not share its signal with the other five tissues. 
+#' 3. liver, which is in coloc with whole blood and testis, but testis & whole blood are independent 
 #'  
 #' # Save data ####
 #' ***

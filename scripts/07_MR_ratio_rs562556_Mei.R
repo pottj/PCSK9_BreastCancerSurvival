@@ -101,7 +101,7 @@ dumTab2 = foreach(i = 1:length(myOutcomes))%do%{
   tab3
 }
 MR_ratio = rbindlist(dumTab2)
-MR_ratio[p_IV1<0.05]
+MR_ratio[setting=="EUR only" & p_IV2<0.05]
 
 #' # Save data ####
 #' ***

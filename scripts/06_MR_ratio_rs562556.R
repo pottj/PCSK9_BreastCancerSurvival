@@ -30,7 +30,7 @@ source("../SourceFile.R")
 myFiles = list.files(path = GWAS_data_PCSK9_pQTLs)
 myFiles
 myFiles = myFiles[!grepl("gz",myFiles)]
-#myFiles = myFiles[c(1,2,4)]
+myFiles = myFiles[c(1,4)]
 myFiles
 
 dumTab1 = foreach(i = 1:length(myFiles))%do%{
@@ -55,6 +55,7 @@ pQTLData
 
 load("../temp/GTExV8_selectedTissues_PCSK9.RData")
 GTExData = GTExData[pos_b37 %in% pQTLData$bp_hg19,]
+GTExData = GTExData[pval<0.05,]
 GTExData
 
 #' # Format ####
@@ -86,116 +87,11 @@ names(GTExData) = names(pQTLData)
 IVData = rbind(GTExData,pQTLData)
 IVData[pval<1e-6,]
 IVData[pval<0.05,]
-save(IVData,file = "../results/06_SumStats_rs562556.RData")
 
 #' # Load outcome data
 #' ***
-BCAC = fread(GWAS_data_BCAC)
-BCAC = BCAC[chromosome == 1,]
-BCAC = BCAC[position %in% IVData$pos_b37,]
-
-BC_FinnGen_UKB = fread(GWAS_data_finngen)
-setnames(BC_FinnGen_UKB,"#CHR","CHR")
-BC_FinnGen_UKB = BC_FinnGen_UKB[CHR == 1,]
-BC_FinnGen_UKB = BC_FinnGen_UKB[POS %in% IVData$pos_b38,]
-
-#' reformat BCAC
-BCAC[, rsID := "rs562556"]
-BCAC[,pos_b38 := BC_FinnGen_UKB$POS]
-names(BCAC)
-
-BCAC1 = copy(BCAC)
-BCAC1[,phenotype := "BCS_cogs"]
-BCAC1 = BCAC1[,c(18,2,3,19,4,5, 20,6,8,9,10)]
-head(BCAC1)
-names(BCAC1) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-                 "phenotype","EAF","beta","se","pval")
-
-BCAC2 = copy(BCAC)
-BCAC2[,phenotype := "BCS_onco"]
-BCAC2 = BCAC2[,c(18,2,3,19,4,5, 20,7,11,12,13)]
-head(BCAC2)
-names(BCAC2) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-                 "phenotype","EAF","beta","se","pval")
-
-BCAC3 = copy(BCAC)
-BCAC3[,phenotype := "BCS_meta"]
-BCAC3[,nSamples := 99217]
-BCAC3[,EAF := (eaf_a1_cogs+eaf_a1_onco)/2]
-BCAC3[eaf_a1_cogs==0,EAF := eaf_a1_onco]
-BCAC3[eaf_a1_onco==0,EAF := eaf_a1_cogs]
-BCAC3 = BCAC3[,c(18,2,3,19,4,5, 20,22,21,14,15,16)]
-head(BCAC3)
-names(BCAC3) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-                 "phenotype","EAF","nSamples","beta","se","pval")
-
-#' ## BC data 
-#' 
-#' Sample sizes are taken from the [FinnGen + UKB webpage](https://public-metaresults-fg-ukbb.finngen.fi/) (filtering for "Malignant neoplasm of breast (controls excluding all cancers)")
-#' 
-BC_FinnGen_UKB[,pos_b37 := BCAC$position]
-names(BC_FinnGen_UKB)
-
-BC1 = copy(BC_FinnGen_UKB)
-BC1[,phenotype := "BCP_FinnGen"]
-BC1[,nSamples := 18786 + 182927]
-BC1[,nCases := 18786]
-BC1 = BC1[,c(22,1,23,2,3,4,  24,9,25,26,6,7,8)]
-head(BC1)
-names(BC1) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-               "phenotype","EAF","nSamples","nCases","beta","se","pval")
-
-BC2 = copy(BC_FinnGen_UKB)
-BC2[,phenotype := "BCP_UKB"]
-BC2[,nSamples := 11807 + 205913]
-BC2[,nCases := 11807]
-BC2 = BC2[,c(22,1,23,2,3,4,  24,15,25,26,12,13,14)]
-head(BC2)
-names(BC2) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-               "phenotype","EAF","nSamples","nCases","beta","se","pval")
-
-BC3 = copy(BC_FinnGen_UKB)
-BC3[,phenotype := "BCP_meta"]
-BC3[,nSamples := 11807 + 205913 + 18786 + 182927]
-BC3[,nCases := 11807 + 18786]
-BC3[,EAF := (FINNGEN_af_alt+UKBB_af_alt)/2]
-BC3[is.na(FINNGEN_af_alt),EAF := UKBB_af_alt]
-BC3 = BC3[,c(22,1,23,2,3,4,  24,27,25,26,17,18,19)]
-head(BC3)
-names(BC3) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-               "phenotype","EAF","nSamples","nCases","beta","se","pval")
-
-#' ## Longevity
-ParentalLongevity = fread(GWAS_data_GWASCatalog1)
-ParentalLongevity_Death = fread(GWAS_data_GWASCatalog2)
-ParentalLongevity = ParentalLongevity[hm_chrom == 1,]
-ParentalLongevity = ParentalLongevity[hm_pos %in% IVData$pos_b38,]
-ParentalLongevity_Death = ParentalLongevity_Death[hm_chrom == 1,]
-ParentalLongevity_Death = ParentalLongevity_Death[hm_pos %in% IVData$pos_b38,]
-
-ParentalLongevity[, pos_b37 := 55524237 ]
-ParentalLongevity[, phenotype := "Parents' attained age"]
-ParentalLongevity[, nSamples := 389166 ]
-
-ParentalLongevity = ParentalLongevity[,c(2,3,25,4,5,6,26,11,27,7,20,21)]
-names(ParentalLongevity) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-                             "phenotype","EAF","nSamples","beta","se","pval")
-
-ParentalLongevity_Death[, pos_b37 := 55524237 ]
-ParentalLongevity_Death[, phenotype := "Parents' age at death"]
-ParentalLongevity_Death[, nSamples := 208118 ]
-
-ParentalLongevity_Death = ParentalLongevity_Death[,c(2,3,25,4,5,6,26,11,27,7,20,21)]
-names(ParentalLongevity_Death) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-                                   "phenotype","EAF","nSamples","beta","se","pval")
-
-#' Merge data sets info one data table
-outcomeData = rbind(BC3, BC1, BC2, BCAC3,BCAC1,BCAC2,ParentalLongevity, ParentalLongevity_Death,fill=T)
-outcomeData[is.na(beta)]
-outcomeData[beta==0,]
-
-outcomeData = outcomeData[beta != 0,]
-outcomeData = outcomeData[!is.na(beta),]
+load("../results/03_outcome_harmonized.RData")
+outcomeData = outcomeData[rsID == "rs562556",]
 
 #' Save data 
 save(IVData, outcomeData,file = "../results/06_SumStats_rs562556.RData")
@@ -224,105 +120,12 @@ dumTab2 = foreach(i = 1:length(myOutcomes))%do%{
   tab3
 }
 MR_ratio = rbindlist(dumTab2)
-MR_ratio[p_IV1<0.05]
+MR_ratio[pval<0.05,table(p_IV2<0.05)]
+names(MR_ratio)[c(13:19)] = paste("outcome",names(MR_ratio)[c(13:19)],sep="_")
 
 #' # Save data ####
 #' ***
 save(MR_ratio, file = "../results/06_MR_ratio_rs562556.RData")
-
-#' # Forest plot ####
-#' ***
-#' ## Breast cancer survival 
-
-plotData = copy(MR_ratio)
-plotData = plotData[pval<0.05,]
-names(plotData)[13:19] = paste(names(plotData)[13:19], "outcome", sep="_")
-plotData = plotData[phenotype_outcome == "BCS_meta",]
-
-plotData[,lowerCI95 := beta_IV-1.96*se_IV2]
-plotData[,upperCI95 := beta_IV+1.96*se_IV2]
-
-plotData$` ` <- paste(rep(" ", 50), collapse = " ")
-plotData$`Estimate \n[95% CI]` <- ifelse(is.na(plotData$se_IV2), "",
-                                         sprintf("%.2f [%.2f, %.2f]",
-                                                 plotData$beta_IV, plotData$lowerCI95, plotData$upperCI95))
-
-setorder(plotData,beta_IV)
-plotData$phenotype
-plotData$Exposure = c("GE (brain, cerebellum)",
-                      "GE (esophagus muscularis)",
-                      "GE (spleen)",
-                      "PE (men, statin-treated)",
-                      "PE (men)",
-                      "PE (men, statin-free)",
-                      "PE (statin-free)",
-                      "PE (women, statin-free)",
-                      "PE (statin-treated)",
-                      "PE (women)")
-
-setnames(plotData,"Exposure","Exposure subgroups")
-p2<- forest(plotData[,c(30,28,29)],
-            est = plotData$beta_IV,
-            lower = plotData$lowerCI95, 
-            upper = plotData$upperCI95,
-            sizes = 0.5,
-            ci_column = 2,
-            ref_line = 0,
-            xlab = "Causal effect estimate",
-            title = "MR of PCSK9 levels on breast cancer survival (rs562556)")
-
-plot(p2)
-
-filename = paste0("../results/06_ForestPlots_rs562556_BCS.png")
-png(filename = filename,width = 1600, height = 700, res=200)
-plot(p2)
-dev.off()
-
-#' ## Breast cancer
-
-plotData = copy(MR_ratio)
-plotData = plotData[pval<0.05,]
-names(plotData)[13:19] = paste(names(plotData)[13:19], "outcome", sep="_")
-plotData = plotData[phenotype_outcome == "BCP_meta",]
-
-plotData[,lowerCI95 := beta_IV-1.96*se_IV2]
-plotData[,upperCI95 := beta_IV+1.96*se_IV2]
-
-plotData$` ` <- paste(rep(" ", 50), collapse = " ")
-plotData$`Estimate \n[95% CI]` <- ifelse(is.na(plotData$se_IV2), "",
-                                         sprintf("%.2f [%.2f, %.2f]",
-                                                 plotData$beta_IV, plotData$lowerCI95, plotData$upperCI95))
-
-setorder(plotData,-beta_IV)
-plotData$phenotype
-plotData$Exposure = c("GE (brain, cerebellum)",
-                      "GE (esophagus muscularis)",
-                      "GE (spleen)",
-                      "PE (men, statin-treated)",
-                      "PE (men)",
-                      "PE (men, statin-free)",
-                      "PE (statin-free)",
-                      "PE (women, statin-free)",
-                      "PE (statin-treated)",
-                      "PE (women)")
-
-setnames(plotData,"Exposure","Exposure subgroups")
-p2<- forest(plotData[,c(30,28,29)],
-            est = plotData$beta_IV,
-            lower = plotData$lowerCI95, 
-            upper = plotData$upperCI95,
-            sizes = 0.5,
-            ci_column = 2,
-            ref_line = 0,
-            xlab = "Causal effect estimate",
-            title = "MR of PCSK9 levels on breast cancer (rs562556)")
-
-plot(p2)
-
-filename = paste0("../results/06_ForestPlots_rs562556_BC.png")
-png(filename = filename,width = 1600, height = 700, res=200)
-plot(p2)
-dev.off()
 
 #' # Session Info ####
 #' ***
