@@ -13,19 +13,17 @@
 #'
 #' # Introduction ####
 #' ***
-#' Sup Tab 1: Instruments for the MR-IVW
+#' Sup Tab 1: all instruments for MR approach (one line per SNP - exposure combination)
 #' 
-#' Sup Tab 2: all MR-IVW results for PCSK9
+#' Sup Tab 2: all instruments for the MVMR approach (one line per SNP - exposure combination)
 #' 
-#' Sup Tab 3: Instruments for the MR ratio estimate + ratio for PCSK9
+#' Sup Tab 3: all summary statistics for all outcomes (one line per SNP - outcome combination)
 #' 
-#' Sup Tab 4: Instruments for the MR-IVW of LDLC
+#' Sup Tab 4: MR-IVW results & MR-ratio results (no rs562556)
 #' 
-#' Sup Tab 5: all MR-IVW results for LDLC 
+#' Sup Tab 5: MR-ratio results for rs562556
 #' 
-#' Sup Tab 6: Instruments for the MVMR-IVW of PCSK9 and LDLC
-#' 
-#' Sup Tab 7: all MVMR-IVW results for PCSK9 and LDLC
+#' Sup Tab 6: MVMR-IVW results
 #' 
 #' # Initialize ####
 #' ***
@@ -35,356 +33,153 @@ server = "laptop_BSU"
 load_meta = F
 
 source("../SourceFile.R")
-.libPaths()
 
 #' # Sup Tab 1 ####
 #' ***
-load("../results/04_IVs_pruned.RData")
-load("../results/03_outcome_harmonized.RData")
+#' All instruments for MR approach (one line per SNP - exposure combination)
+#' 
+load("../results/03_Exposure_for_MR_pruned.RData")
+ExposureData
 
-IVData = IVData[phenotype != "PCSK9_females_free",]
-IVData[,flag := NULL]
-names(IVData)[8:12] = paste0("PCSK9_",names(IVData)[8:12])
-
-#' add breast cancer survival summary statistics from BCAC
-out1 = copy(outcomeData)
-out1 = out1[phenotype == "BCS",]
-matched1 = match(IVData$rsID,out1$rsID)
-out1 = out1[matched1,]
-
-IVData[,BCSurvival_EAF := out1$EAF]
-IVData[,BCSurvival_nSamples := out1$nSamples]
-IVData[,BCSurvival_nCases := out1$nCases]
-IVData[,BCSurvival_logHR := out1$beta]
-IVData[,BCSurvival_se := out1$se]
-IVData[,BCSurvival_pval := out1$pval]
-
-plot(IVData$PCSK9_EAF,IVData$BCSurvival_EAF)
-abline(0,1)
-
-#' add breast cancer summary statistics from FinnGen and UKB meta-analysis
-out2 = copy(outcomeData)
-out2 = out2[phenotype == "BC",]
-matched2 = match(IVData$rsID,out2$rsID)
-out2 = out2[matched2,]
-
-IVData[,BreastCancer_EAF := out2$EAF]
-IVData[,BreastCancer_nSamples := out2$nSamples]
-IVData[,BreastCancer_nCases := out2$nCases]
-IVData[,BreastCancer_logOR := out2$beta]
-IVData[,BreastCancer_se := out2$se]
-IVData[,BreastCancer_pval := out2$pval]
-
-plot(IVData$PCSK9_EAF,IVData$BreastCancer_EAF)
-abline(0,1)
-
-#' add coronary atherosclerosis statistics from FinnGen and UKB meta-analysis
-out2 = copy(outcomeData)
-out2 = out2[phenotype == "CAD",]
-matched2 = match(IVData$rsID,out2$rsID)
-out2 = out2[matched2,]
-
-IVData[,CAD_EAF := out2$EAF]
-IVData[,CAD_nSamples := out2$nSamples]
-IVData[,CAD_nCases := out2$nCases]
-IVData[,CAD_logOR := out2$beta]
-IVData[,CAD_se := out2$se]
-IVData[,CAD_pval := out2$pval]
-
-plot(IVData$PCSK9_EAF,IVData$CAD_EAF)
-abline(0,1)
-
-#' add parental age at death summary statistics from UKB 
-out2 = copy(outcomeData)
-out2 = out2[phenotype == "PAAD",]
-matched2 = match(IVData$rsID,out2$rsID)
-out2 = out2[matched2,]
-
-IVData[,ParentsAgeAtDeath_EAF := out2$EAF]
-IVData[,ParentsAgeAtDeath_nSamples := out2$nSamples]
-IVData[,ParentsAgeAtDeath_beta := out2$beta]
-IVData[,ParentsAgeAtDeath_se := out2$se]
-IVData[,ParentsAgeAtDeath_pval := out2$pval]
-
-plot(IVData$PCSK9_EAF,IVData$AgeAtDeath_EAF)
-abline(0,1)
-
-stab1 = copy(IVData)
+stab1 = copy(ExposureData)
 setnames(stab1,"phenotype","exposure")
+setorder(stab1,-exposure,setting,chr,pos_b37)
 
 #' # Sup Tab 2 ####
 #' ***
-load("../results/05_MR_IVW.RData")
-MR_IVW[outcome == "BC", outcome := "BreastCancer [FinnGen+UKB]"]
-MR_IVW[outcome == "BCS", outcome := "BCSurvival [BCAC]"]
-MR_IVW[outcome == "CAD", outcome := "CAD [FinnGen+UKB]"]
-MR_IVW[outcome == "PAAD", outcome := "ParentsAgeAtDeath [UKB]"]
+#' All instruments for the MVMR approach (one line per SNP - exposure combination)
+#' 
+load("../results/05_MVMR_input.RData")
+ExposureData_MVMR
 
-stab2 = copy(MR_IVW)
-stab2 = stab2[exposure != "Testis",]
+stab2 = copy(ExposureData_MVMR)
+
+#' Add some missing columns (Z-Score, position in b38)
+stab2[,exp1_absZScore := abs(exp1_beta/exp1_se)]
+stab2[,exp2_absZScore := abs(exp2_beta/exp2_se)]
+matched = match(stab2$rsID,stab1$rsID)
+stopifnot(is.na(matched)==F)
+stab2[,pos_b38 := stab1[matched,pos_b38]]
+
+#' Add flags to indicate which SNP was used for what analysis
+stab2[,flag1_PCSK9_v1 := F]
+stab2[rsID %in% stab1[exposure == "PCSK9 protein levels" & !grepl("ratio",setting),rsID],flag1_PCSK9_v1 := T]
+stab2[,flag2_PCSK9_v2 := F]
+stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting == "females PCSK9 SNPs",rsID] & setting == "females",flag2_PCSK9_v2 := T]
+stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting == "all PCSK9 SNPs",rsID] & setting == "all",flag2_PCSK9_v2 := T]
+stab2[,flag3_PCSK9_HMGCR := F]
+stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting %in% c("females PCSK9 SNPs","females HMGCR SNPs"),rsID] & setting == "females",flag3_PCSK9_HMGCR := T]
+stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting %in% c("all PCSK9 SNPs","all HMGCR SNPs"),rsID] & setting == "all",flag3_PCSK9_HMGCR := T]
+stab2[,flag4_genome_wide := F]
+stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting %in% c("females gw SNPs"),rsID] & setting == "females",flag4_genome_wide := T]
+stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting %in% c("all gw SNPs"),rsID] & setting == "all",flag4_genome_wide := T]
+stab2 = stab2[flag1_PCSK9_v1==T | flag2_PCSK9_v2==T | flag3_PCSK9_HMGCR==T | flag4_genome_wide==T,]
+
+#' Change order 
+names(stab2)
+stab2 = stab2[,c(1:3,21,4:12,19,13:18,20,22:25)]
+setorder(stab2,-setting,chr,pos_b37)
 
 #' # Sup Tab 3 ####
 #' ***
-load("../results/06_MR_ratio_rs562556.RData")
-MR_ratio_BCAC = copy(MR_ratio)
+#' All summary statistics for all outcomes (one line per SNP - outcome combination)
+#' 
+load("../results/02_Outcome_for_MR.RData")
+OutcomeData
 
-load("../results/07_MR_ratio_rs562556_Mei.RData")
-MR_ratio_Mei = copy(MR_ratio)
+stab3 = copy(OutcomeData)
+stab3[,chr := as.numeric(chr)]
+stab3[,absZScore := abs(beta/se)]
+setnames(stab3,"phenotype","outcome")
+setorder(stab3,outcome,setting,chr,pos_b37)
 
-MR_ratio_BCAC[,outcome_source := "Morra et al."]
-MR_ratio_Mei[,outcome_source := "Mei et al."]
+stab3[setting == "all", setting := "Aragam et al. sex-combined"]
+stab3[setting == "females", setting := "Aragam et al. females"]
+stab3[setting == "UKB", setting := "Pilling et al. sex-combined"]
+stab3[grepl("BC",outcome), setting := paste(setting,"females")]
+stab3[,setting := gsub("BCAC","Morra et al.",setting)]
 
-names(MR_ratio_BCAC)
-names(MR_ratio_Mei)
-names(MR_ratio_Mei)[13:15] = c("phenotype","beta","se" )
-names(MR_ratio_Mei)[13:16] = paste0("outcome_",names(MR_ratio_Mei)[13:16])
-MR_ratio_Mei = MR_ratio_Mei[outcome_phenotype == "EUR only"]
-MR_ratio_Mei[,outcome_phenotype := "BCS_Mei"]
-MR_ratio_BCAC[outcome_phenotype=="BCS",outcome_phenotype := "BCS_Morra"]
+stab3[,beta_type := "linear effect"]
+stab3[outcome %in% c("BC","CAD"),beta_type := "log(OR)"]
+stab3[outcome %in% c("BCS"),beta_type := "log(HR)"]
 
-MR_ratio = rbind(MR_ratio_BCAC,MR_ratio_Mei,use.names=T,fill=T)
-names(MR_ratio) 
+stab3[outcome == "CAD",outcome := "Coronary Artery Disease"]
+stab3[outcome == "BC",outcome := "Breast Cancer"]
+stab3[outcome == "BCS",outcome := "Breast Cancer Survival"]
+stab3[outcome == "PLD",outcome := "Parental Longevity (combined parental age at death)"]
 
-stab3 = MR_ratio[,c(1:20,22,24,25)]
-names(stab3)[7:12] = paste0("exposure_",names(stab3)[7:12])
-names(stab3)[20] = "beta_ratio"
-names(stab3)[21] = "se_ratio"
-names(stab3)[22] = "pval_ratio"
-
-stab3[outcome_phenotype == "BC", outcome_phenotype := "BreastCancer [FinnGen+UKB]"]
-stab3[outcome_phenotype == "CAD", outcome_phenotype := "CAD [FinnGen+UKB]"]
-stab3[outcome_phenotype == "BCS_Morra", outcome_phenotype := "BCSurvival [BCAC]"]
-stab3[outcome_phenotype == "PAAD", outcome_phenotype := "ParentsAgeAtDeath [UKB]"]
-stab3[outcome_phenotype == "BCS_Mei", outcome_phenotype := "BCSurvival [Mei et al.]"]
-
-names(stab3)[7] = "exposure"
-names(stab3)[13] = "outcome"
-
-stab3 = stab3[exposure != "Testis",]
+#' Filter for SNPs in the exposure data sets
+stab3 = stab3[rsID %in% stab1$rsID,]
+stopifnot(stab2$rsID %in% stab3$rsID)
 
 #' # Sup Tab 4 ####
 #' ***
-#' Instruments for MR-IVW for LDLC
+#' MR-IVW results & MR-ratio results (no rs562556)
 #' 
-load("../temp/09_MR_IVW_input.RData")
+load("../results/04_MR.RData")
+MRTab
 
-mySNPs_PCSK9 = c("rs2495491","rs11591147","rs693668","rs11583680")
-mySNPs_HMGCR = c("rs12916","rs1525764")
-mySNPs_PCSK9_HMGCR = c(mySNPs_PCSK9,mySNPs_HMGCR)
+MRTab[outcome == "BC - FinnGen + UKB", outcome := "Breast Cancer - females"]
+MRTab[outcome == "BCS - BCAC", outcome := "Breast Cancer Survival - females - Morra et al."]
+MRTab[outcome == "BCS - Mei et al.", outcome := "Breast Cancer Survival - females - Mei at al."]
+MRTab[outcome == "CAD - all", outcome := "Coronary Artery Disease - all"]
+MRTab[outcome == "CAD - females", outcome := "Coronary Artery Disease - females"]
+MRTab[outcome == "PLD - UKB", outcome := "Parental Longevity - all"]
 
-stab4 = copy(LDLC)
-names(stab4)[8:12] = paste0("LDLC_",names(stab4)[8:12])
-
-#' add breast cancer survival summary statistics from BCAC
-stopifnot(stab4$rsID == outcomeData[phenotype=="BCS",rsID])
-stab4[,BCSurvival_EAF := outcomeData[phenotype=="BCS",EAF]]
-stab4[,BCSurvival_nSamples := outcomeData[phenotype=="BCS",nSamples]]
-stab4[,BCSurvival_nCases := outcomeData[phenotype=="BCS",nCases]]
-stab4[,BCSurvival_logHR := outcomeData[phenotype=="BCS",beta]]
-stab4[,BCSurvival_se := outcomeData[phenotype=="BCS",se]]
-stab4[,BCSurvival_pval := outcomeData[phenotype=="BCS",pval]]
-
-plot(stab4$LDLC_EAF,stab4$BCSurvival_EAF)
-abline(0,1)
-
-#' add breast cancer summary statistics from FinnGen and UKB meta-analysis
-stopifnot(stab4$rsID == outcomeData[phenotype=="BC",rsID])
-stab4[,BreastCancer_EAF := outcomeData[phenotype=="BC",EAF]]
-stab4[,BreastCancer_nSamples := outcomeData[phenotype=="BC",nSamples]]
-stab4[,BreastCancer_nCases := outcomeData[phenotype=="BC",nCases]]
-stab4[,BreastCancer_logOR := outcomeData[phenotype=="BC",beta]]
-stab4[,BreastCancer_se := outcomeData[phenotype=="BC",se]]
-stab4[,BreastCancer_pval := outcomeData[phenotype=="BC",pval]]
-
-plot(stab4$LDLC_EAF,stab4$BreastCancer_EAF)
-abline(0,1)
-
-#' add CAD summary statistics from FinnGen and UKB meta-analysis
-stopifnot(stab4$rsID == outcomeData[phenotype=="CAD",rsID])
-stab4[,CAD_EAF := outcomeData[phenotype=="CAD",EAF]]
-stab4[,CAD_nSamples := outcomeData[phenotype=="CAD",nSamples]]
-stab4[,CAD_nCases := outcomeData[phenotype=="CAD",nCases]]
-stab4[,CAD_logOR := outcomeData[phenotype=="CAD",beta]]
-stab4[,CAD_se := outcomeData[phenotype=="CAD",se]]
-stab4[,CAD_pval := outcomeData[phenotype=="CAD",pval]]
-
-plot(stab4$LDLC_EAF,stab4$CAD_EAF)
-abline(0,1)
-
-#' add parental age at death summary statistics from UKB 
-stopifnot(stab4$rsID == outcomeData[phenotype=="PAAD",rsID])
-stab4[,ParentsAgeAtDeath_EAF := outcomeData[phenotype=="PAAD",EAF]]
-stab4[,ParentsAgeAtDeath_nSamples := outcomeData[phenotype=="PAAD",nSamples]]
-stab4[,ParentsAgeAtDeath_nCases := outcomeData[phenotype=="PAAD",nCases]]
-stab4[,ParentsAgeAtDeath_beta := outcomeData[phenotype=="PAAD",beta]]
-stab4[,ParentsAgeAtDeath_se := outcomeData[phenotype=="PAAD",se]]
-stab4[,ParentsAgeAtDeath_pval := outcomeData[phenotype=="PAAD",pval]]
-
-plot(stab4$LDLC_EAF,stab4$ParentsAgeAtDeath_EAF)
-abline(0,1)
-
-#' add flags to indicate usage in the MR_IVW approaches
-#' 
-stab4[,flag1 := F]
-stab4[!is.element(rsID,c("rs2495491","rs693668")),flag1 := T]
-stab4[,flag2 := F]
-stab4[rsID %in% mySNPs_PCSK9,flag2 := T]
-stab4[,flag3 := F]
-stab4[rsID %in% mySNPs_HMGCR,flag3 := T]
-stab4[,flag4 := F]
-stab4[rsID %in% mySNPs_PCSK9_HMGCR,flag4 := T]
-
-stab4[,phenotype := "LDLC_females"]
-setnames(stab4,"phenotype","exposure")
+stab4 = copy(MRTab)
+stab4 = stab4[!grepl("ratio",exposure)]
 
 #' # Sup Tab 5 ####
 #' ***
-#' MR-IVW results for LDLC
-load("../results/09_MR_IVW_LDLC.RData")
-MR_IVW[outcome == "BC", outcome := "BreastCancer [FinnGen+UKB]"]
-MR_IVW[outcome == "BCS", outcome := "BCSurvival [BCAC]"]
-MR_IVW[outcome == "CAD", outcome := "CAD [FinnGen+UKB]"]
-MR_IVW[outcome == "PAAD", outcome := "ParentsAgeAtDeath [UKB]"]
+#' MR-ratio results for rs562556
+#' 
+stab5 = copy(MRTab)
+stab5 = stab5[grepl("ratio",exposure)]
 
-stab5 = copy(MR_IVW)
-stab5[,exposure := "LDLC_females"]
-
-stab5[comment == "pruned",comment := "flag1"]
-stab5[comment == "PCSK9",comment := "flag2"]
-stab5[comment == "HMGCR",comment := "flag3"]
-stab5[comment == "HMGCR_PCSK9",comment := "flag4"]
-setnames(stab5,"comment","flag")
+stab5 = stab5[,c(1,2,5:8)]
+stab5[,exposure := gsub(" ratio","",exposure)]
 
 #' # Sup Tab 6 ####
 #' ***
-#' Instruments for MVMR-IVW for PCSK9 and LDLC
+#' MVMR-IVW results
 #' 
-load("../temp/10_MVMR_IVW_input.RData")
+load("../results/05_MVMR.RData")
+MVMRTab
 
-stab6 = copy(LDLC)
-names(stab6)[8:12] = paste0("LDLC_",names(stab6)[8:12])
-stab6[,phenotype := "LDLC_females"]
-setnames(stab6,"phenotype","exposure2")
+stab6 = copy(MVMRTab)
+stab6[outcome == "BC - FinnGen + UKB", outcome := "Breast Cancer - females"]
+stab6[outcome == "BCS - BCAC", outcome := "Breast Cancer Survival - females - Morra et al."]
+stab6[outcome == "CAD - all", outcome := "Coronary Artery Disease - all"]
+stab6[outcome == "CAD - females", outcome := "Coronary Artery Disease - females"]
+stab6[outcome == "PLD - UKB", outcome := "Parental Longevity - all"]
 
-#' add PCSK9 females summary statistics from Pott et al.
-stab6[,exposure1 := "PCSK9_females"]
-stab6[,PCSK9_EAF := PCSK9_females$EAF]
-stab6[,PCSK9_nSamples := PCSK9_females$nSamples]
-stab6[,PCSK9_beta := PCSK9_females$beta]
-stab6[,PCSK9_se := PCSK9_females$SE]
-stab6[,PCSK9_pval := PCSK9_females$pval]
+setnames(stab6,"sex","exposure_sex")
+setnames(stab6,"SNPset","flag")
+stab6[flag == "PCSK9_v1", flag := "flag1_PVSK9_v1"]
+stab6[flag == "PCSK9_v2", flag := "flag2_PCSK9_v2"]
+stab6[flag == "PCSK9_HMGCR", flag := "flag3_PCSK9_HMGCR"]
+stab6[flag == "genome-wide", flag := "flag4_genome_wide"]
 
-stab6 = stab6[,c(1:6,13:18,7:12)]
-
-#' add breast cancer survival summary statistics from BCAC
-stopifnot(stab6$rsID == outcomeData[phenotype=="BCS",rsID])
-stab6[,BCSurvival_EAF := outcomeData[phenotype=="BCS",EAF]]
-stab6[,BCSurvival_nSamples := outcomeData[phenotype=="BCS",nSamples]]
-stab6[,BCSurvival_nCases := outcomeData[phenotype=="BCS",nCases]]
-stab6[,BCSurvival_logHR := outcomeData[phenotype=="BCS",beta]]
-stab6[,BCSurvival_se := outcomeData[phenotype=="BCS",se]]
-stab6[,BCSurvival_pval := outcomeData[phenotype=="BCS",pval]]
-
-plot(stab6$LDLC_EAF,stab6$BCSurvival_EAF)
-abline(0,1)
-
-#' add breast cancer summary statistics from FinnGen and UKB meta-analysis
-stopifnot(stab6$rsID == outcomeData[phenotype=="BC",rsID])
-stab6[,BreastCancer_EAF := outcomeData[phenotype=="BC",EAF]]
-stab6[,BreastCancer_nSamples := outcomeData[phenotype=="BC",nSamples]]
-stab6[,BreastCancer_nCases := outcomeData[phenotype=="BC",nCases]]
-stab6[,BreastCancer_logOR := outcomeData[phenotype=="BC",beta]]
-stab6[,BreastCancer_se := outcomeData[phenotype=="BC",se]]
-stab6[,BreastCancer_pval := outcomeData[phenotype=="BC",pval]]
-
-plot(stab6$LDLC_EAF,stab6$BreastCancer_EAF)
-abline(0,1)
-
-#' add CAD summary statistics from FinnGen and UKB meta-analysis
-stopifnot(stab6$rsID == outcomeData[phenotype=="CAD",rsID])
-stab6[,CAD_EAF := outcomeData[phenotype=="CAD",EAF]]
-stab6[,CAD_nSamples := outcomeData[phenotype=="CAD",nSamples]]
-stab6[,CAD_nCases := outcomeData[phenotype=="CAD",nCases]]
-stab6[,CAD_logOR := outcomeData[phenotype=="CAD",beta]]
-stab6[,CAD_se := outcomeData[phenotype=="CAD",se]]
-stab6[,CAD_pval := outcomeData[phenotype=="CAD",pval]]
-
-plot(stab6$LDLC_EAF,stab6$CAD_EAF)
-abline(0,1)
-
-#' add parental age at death summary statistics from UKB 
-stopifnot(stab6$rsID == outcomeData[phenotype=="PAAD",rsID])
-stab6[,ParentsAgeAtDeath_EAF := outcomeData[phenotype=="PAAD",EAF]]
-stab6[,ParentsAgeAtDeath_nSamples := outcomeData[phenotype=="PAAD",nSamples]]
-stab6[,ParentsAgeAtDeath_nCases := outcomeData[phenotype=="PAAD",nCases]]
-stab6[,ParentsAgeAtDeath_beta := outcomeData[phenotype=="PAAD",beta]]
-stab6[,ParentsAgeAtDeath_se := outcomeData[phenotype=="PAAD",se]]
-stab6[,ParentsAgeAtDeath_pval := outcomeData[phenotype=="PAAD",pval]]
-
-plot(stab6$LDLC_EAF,stab6$ParentsAgeAtDeath_EAF)
-abline(0,1)
-
-#' add PCSK in statin-free individuals
-#' 
-stab6_2 = copy(stab6)
-stab6_2[,exposure1 := "PCSK9_free"]
-stab6_2[,PCSK9_EAF := PCSK9_free$EAF]
-stab6_2[,PCSK9_nSamples := PCSK9_free$nSamples]
-stab6_2[,PCSK9_beta := PCSK9_free$beta]
-stab6_2[,PCSK9_se := PCSK9_free$SE]
-stab6_2[,PCSK9_pval := PCSK9_free$pval]
-
-stab6 = rbind(stab6,stab6_2)
-
-#' add flag for different modes
-mySNPs = c("rs2495491","rs11591147","rs693668","rs11583680","rs562556","rs12916","rs1525764")
-
-stab6[,flag1 := F]
-stab6[rsID %in% mySNPs[-5],flag1 := T]
-stab6[,flag2 := F]
-stab6[rsID %in% mySNPs[1:4],flag2 := T]
-stab6[,flag3 := F]
-stab6[rsID %in% mySNPs,flag3 := T]
-stab6[,flag4 := F]
-stab6[rsID %in% mySNPs[1:5],flag4 := T]
-
-#' # Sup Tab 7 ####
-#' ***
-#' MVMR-IVW results for PCSK9 and LDLC
-load("../results/10_MVMR_IVW_LDLC_PCSK9.RData")
-MVMR_IVW[outcome == "BC", outcome := "BreastCancer [FinnGen+UKB]"]
-MVMR_IVW[outcome == "BCS", outcome := "BCSurvival [BCAC]"]
-MVMR_IVW[outcome == "PAAD", outcome := "ParentsAgeAtDeath [UKB]"]
-MVMR_IVW[outcome == "CAD", outcome := "CAD [FinnGen+UKB]"]
-
-stab7 = copy(MVMR_IVW)
-stab7[,exposure2 := "LDLC_females"]
-stab7[grepl("female",exposure1),exposure1 := "PCSK9_females"]
-stab7[!grepl("female",exposure1),exposure1 := "PCSK9_free"]
-
-stab7[comment == "HMGCR_PCSK9",comment := "flag1"]
-stab7[comment == "HMGCR_PCSK9_rs562556",comment := "flag3"]
-stab7[comment == "PCSK9",comment := "flag2"]
-stab7[comment == "PCSK9_rs562556",comment := "flag4"]
-setnames(stab7,"comment","flag")
-
+stab6 = stab6[,c(1,3,4,2,5:16)]
+setnames(stab6,"NR_SNPs_total","nSNPs")
+setnames(stab6,"SE_exp1","se_exp1")
+setnames(stab6,"SE_exp2","se_exp2")
+setnames(stab6,"condFstat_exp1","condFStat_exp1")
+setnames(stab6,"condFstat_exp2","condFStat_exp2")
+setnames(stab6,"HeteroStat","Q")
+setnames(stab6,"HeteroStat_pval","pval_Q")
 
 #' # Save ####
 #' ***
-#' I do not want to change the names here, but change the order in which they appear in the excel sheet. 
 #' 
-#' First all tables with instrument information (ST1, ST3, ST4, and ST6).
-#' 
-#' Then the MR-IVW results (ST2 and ST5) and the MVMR-IVW results (ST7)
-#' 
-WriteXLS(x = c("stab1","stab3","stab4","stab6","stab2","stab5","stab7"), 
+WriteXLS(x = c("stab1","stab2","stab3","stab4","stab5","stab6"), 
          ExcelFileName=paste0("../results/SupTables.xlsx"), 
-         SheetNames=paste0("TableS",1:7), 
+         SheetNames=paste0("TableS",1:6), 
          AutoFilter=T, 
          BoldHeaderRow=T,
          FreezeRow=1)
 
-save(stab1,stab2,stab3,stab4,stab5,stab6,stab7,file = "../results/SupTables.RData")
+save(stab1,stab2,stab3,stab4,stab5,stab6,file = "../results/SupTables.RData")
 
 #' # Session Info ####
 #' ***

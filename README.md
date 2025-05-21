@@ -25,7 +25,7 @@ Publication in December 2024 from [Wenbin Mei et al.](https://doi.org/10.1016/j.
     - publication: [The GTEx Consortium](https://www.science.org/doi/10.1126/science.aaz1776)
     - data: [GTEx v10](https://gtexportal.org/home/downloads/adult-gtex/qtl); [GTEx Portal](https://gtexportal.org/home/gene/PCSK9)
 - LDL-C levels (females and sex-combined): 
-    - publications: [Kanoni et al., 2022](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02837-1) (females); [Graham et al., 2021](https://www.nature.com/articles/s41586-021-04064-3)(sex-combined)
+    - publications: [Kanoni et al., 2022](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02837-1) (females); [Graham et al., 2021](https://www.nature.com/articles/s41586-021-04064-3) (sex-combined)
     - data: [GLGC](https://csg.sph.umich.edu/willer/public/glgc-lipids2021/)
 
 **Outcome data**: 
@@ -35,7 +35,7 @@ Publication in December 2024 from [Wenbin Mei et al.](https://doi.org/10.1016/j.
     - data: [BCAC](http://bcac.ccge.medschl.cam.ac.uk); **please note**: website no longer working, data available upon request 
 - Breast cancer survival (females) - rs562556: 
     - publication: [Mei et al., 2025](https://www.sciencedirect.com/science/article/pii/S0092867424013266?via%3Dihub)
-    - data: [Mei et al., 2025](https://www.sciencedirect.com/science/article/pii/S0092867424013266?via%3Dihub#figs1); please note: HR and CIs extracted from Figure S1H (rs562556 association with breast cancer survival in different cohorts limited to European ancestry) 
+    - data: [Mei et al., 2025](https://www.sciencedirect.com/science/article/pii/S0092867424013266?via%3Dihub#figs1); **please note**: HR and CIs extracted from Figure S1H (rs562556 association with breast cancer survival in different cohorts limited to European ancestry) 
 - Breast cancer (Malignant neoplasm of breast (controls excluding all cancers), females): 
     - publication: [Kurki et al., 2023](https://www.nature.com/articles/s41586-022-05473-8)
     - data: [FinnGen & UKB](gs://finngen-public-data-r10/ukbb_meta/); **please note**: website for data download requires login
@@ -44,7 +44,7 @@ Publication in December 2024 from [Wenbin Mei et al.](https://doi.org/10.1016/j.
     - data: [GWAS Catalog](https://www.ebi.ac.uk/gwas/studies/GCST006702)
 - Coronary artery disease (females and sex-combined)
     - publication: [Aragam et al., 2022](https://www.nature.com/articles/s41588-022-01233-6)
-    - data: [HuGeAMP](https://hugeamp.org/dinspector.html?dataset=Aragam2022_CAD_Mixed_females&phenotype=CAD)(females); [HuGeAMP](https://hugeamp.org/dinspector.html?dataset=Aragam2022_CAD_EU&phenotype=CAD)(sex-combined)
+    - data: [HuGeAMP](https://hugeamp.org/dinspector.html?dataset=Aragam2022_CAD_Mixed_females&phenotype=CAD) (females); [HuGeAMP](https://hugeamp.org/dinspector.html?dataset=Aragam2022_CAD_EU&phenotype=CAD) (sex-combined)
 
 ## Analysis plan
 
