@@ -19,7 +19,7 @@
 rm(list = ls())
 time0<-Sys.time()
 server = "laptop_BSU"
-load_meta = F
+load_meta = T
 
 source("../SourceFile.R")
 .libPaths()
@@ -43,7 +43,7 @@ SNPList[,chrPos := paste(chr,pos_b37,sep = "_")]
 
 #' # Load PCSK9 data ####
 #' ***
-myFiles = c(Pott_PCSK9_females,Pott_PCSK9_free)
+myFiles = c(Pott_PCSK9_females,Pott_PCSK9_males)
 
 dumTab2 = foreach(i = 1:length(myFiles))%do%{
   #i=1
@@ -65,6 +65,37 @@ dumTab2 = foreach(i = 1:length(myFiles))%do%{
   data0
 }
 pQTLData = rbindlist(dumTab2)
+
+#' Meta-analyse males and females
+mySNPs = unique(pQTLData$rsID)
+dumTab2 = foreach(i = 1:length(mySNPs))%do%{
+  #i=1
+  filt = pQTLData$rsID == mySNPs[i]
+  meta = metagen(TE = pQTLData[filt,beta],
+                 seTE = pQTLData[filt,se],
+                 studlab = pQTLData[filt,setting])
+  # summary(meta)
+  # forest(meta)
+  
+  mySamples = pQTLData[filt,nSamples]
+  myEAFs = pQTLData[filt,EAF]
+  mySamples2 = mySamples/sum(mySamples)
+  myEAFs2 = round(sum(myEAFs * mySamples/sum(mySamples)),4)
+  
+  data = copy(pQTLData)
+  data = data[!grepl("females",setting) & rsID == mySNPs[i],]
+  data[, beta := meta$TE.fixed]
+  data[, se := meta$seTE.fixed]
+  data[, pval := meta$pval.fixed]
+  data[, nSamples := sum(mySamples)]
+  data[, EAF := myEAFs2]
+  data[, setting := "all"]
+  
+  data
+}
+pQTLData2 = rbindlist(dumTab2)
+pQTLData = rbind(pQTLData[grepl("females",setting),],pQTLData2)
+setorder(pQTLData,setting,chr,pos_b37)
 
 matched = match(pQTLData$rsID,SNPList$rsID)
 table(is.na(matched))
