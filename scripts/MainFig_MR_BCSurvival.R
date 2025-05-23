@@ -52,7 +52,7 @@ MRTab[,exposure := gsub("HMGCR SNPs","(HMGCR)",exposure)]
 MRTab[,exposure := gsub("gw SNPs","(any)",exposure)]
 MRTab[,exposure := gsub("free","all",exposure)]
 MRTab[!grepl("[()]",exposure),exposure := paste(exposure, "(PCSK9)")]
-MRTab[,exposure := paste(c(8,8,8,7,7,7,6,6,5,5,2,6,4,1,5,3),exposure)]
+MRTab[,exposure := paste(c(7,7,7,8,8,8,6,6,5,5,2,6,4,1,5,3),exposure)]
 
 MRTab[,outcome2 := gsub("BC Survival","MR-IVW",outcome)]
 MRTab[method=="MR-ratio",outcome2 := gsub("MR-IVW","MR-ratio",outcome2)]

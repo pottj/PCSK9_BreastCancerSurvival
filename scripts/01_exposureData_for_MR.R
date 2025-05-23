@@ -23,7 +23,7 @@
 rm(list = ls())
 time0<-Sys.time()
 server = "laptop_BSU"
-load_meta = F
+load_meta = T
 
 source("../SourceFile.R")
 
@@ -108,8 +108,7 @@ save(GTExData,file = "../temp/GTExV10_potentialIVs.RData")
 #' Here, I want to use the same instruments as in the publication: rs11591147, rs693668, rs11583680, and rs2495491. In addition, I extract rs562556 for the MR-ratio approach. 
 #' 
 mySNPs = c("rs11591147", "rs693668", "rs11583680", "rs2495491", "rs562556")
-
-myFiles = c(Pott_PCSK9_females,Pott_PCSK9_free)
+myFiles = c(Pott_PCSK9_females,Pott_PCSK9_males)
 
 dumTab2 = foreach(i = 1:length(myFiles))%do%{
   #i=1
@@ -137,6 +136,38 @@ pQTLData[pval<5e-8,.N,by=setting]
 pQTLData[,.N,by=setting]
 pQTLData[,min(pval),by=setting]
 pQTLData[,max(pval),by=setting]
+
+#' Meta-analyse males and females
+dumTab2 = foreach(i = 1:length(mySNPs))%do%{
+  #i=1
+  filt = pQTLData$rsID == mySNPs[i]
+  meta = metagen(TE = pQTLData[filt,beta],
+                 seTE = pQTLData[filt,se],
+                 studlab = pQTLData[filt,setting])
+  # summary(meta)
+  # forest(meta)
+  
+  mySamples = pQTLData[filt,nSamples]
+  myEAFs = pQTLData[filt,EAF]
+  mySamples2 = mySamples/sum(mySamples)
+  myEAFs2 = round(sum(myEAFs * mySamples/sum(mySamples)),4)
+  
+  data = copy(pQTLData)
+  data = data[!grepl("females",setting) & rsID == mySNPs[i],]
+  data[, beta := meta$TE.fixed]
+  data[, se := meta$seTE.fixed]
+  data[, pval := meta$pval.fixed]
+  data[, nSamples := sum(mySamples)]
+  data[, EAF := myEAFs2]
+  data[, setting := "all"]
+  
+  data
+}
+pQTLData2 = rbindlist(dumTab2)
+pQTLData2[rsID=="rs562556",setting := paste(setting,"ratio")]
+
+pQTLData = rbind(pQTLData[grepl("females",setting),],pQTLData2)
+setorder(pQTLData,setting,chr,pos_b37)
 
 save(pQTLData,file = "../temp/Pott_potentialIVs_MR.RData")
 
