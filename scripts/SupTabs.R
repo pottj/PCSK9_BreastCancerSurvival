@@ -34,6 +34,17 @@ load_meta = F
 
 source("../SourceFile.R")
 
+#' # Sup Tab 0 ####
+#' ***
+#' Content
+stab0 = data.table(Table = paste0("S",1:6),
+                   Title = c("Instruments and exposure association for the MR approaches",
+                             "Instruments and expoures association for the MVMR approach",
+                             "Instruments and outcome associations for both MR and MVMR approaches",
+                             "Results of the MR analyses using genome-wide significant instrumets",
+                             "Results of the MR-ratio using rs562556", 
+                             "Results of the MVMR analyses"))
+
 #' # Sup Tab 1 ####
 #' ***
 #' All instruments for MR approach (one line per SNP - exposure combination)
@@ -118,6 +129,7 @@ stopifnot(stab2$rsID %in% stab3$rsID)
 #' 
 load("../results/04_MR.RData")
 MRTab
+MRTab[,pval_adj := p.adjust(p=pval,method = "fdr")]
 
 MRTab[outcome == "BC - FinnGen + UKB", outcome := "Breast Cancer - females"]
 MRTab[outcome == "BCS - BCAC", outcome := "Breast Cancer Survival - females - Morra et al."]
@@ -128,6 +140,7 @@ MRTab[outcome == "PLD - UKB", outcome := "Parental Longevity - all"]
 
 stab4 = copy(MRTab)
 stab4 = stab4[!grepl("ratio",exposure)]
+stab4 = stab4[,c(1:7,11,8:10)]
 
 #' # Sup Tab 5 ####
 #' ***
@@ -136,7 +149,7 @@ stab4 = stab4[!grepl("ratio",exposure)]
 stab5 = copy(MRTab)
 stab5 = stab5[grepl("ratio",exposure)]
 
-stab5 = stab5[,c(1,2,5:8)]
+stab5 = stab5[,c(1,2,5:7,11,8)]
 stab5[,exposure := gsub(" ratio","",exposure)]
 
 #' # Sup Tab 6 ####
@@ -145,6 +158,8 @@ stab5[,exposure := gsub(" ratio","",exposure)]
 #' 
 load("../results/05_MVMR.RData")
 MVMRTab
+MVMRTab[,pval_adj1 := p.adjust(p=pval_exp1,method = "fdr")]
+MVMRTab[,pval_adj2 := p.adjust(p=pval_exp2,method = "fdr")]
 
 stab6 = copy(MVMRTab)
 stab6[outcome == "BC - FinnGen + UKB", outcome := "Breast Cancer - females"]
@@ -160,7 +175,7 @@ stab6[flag == "PCSK9_v2", flag := "flag2_PCSK9_v2"]
 stab6[flag == "PCSK9_HMGCR", flag := "flag3_PCSK9_HMGCR"]
 stab6[flag == "genome-wide", flag := "flag4_genome_wide"]
 
-stab6 = stab6[,c(1,3,4,2,5:16)]
+stab6 = stab6[,c(1,3,4,2,5:8,17,9:13,18,14:16)]
 setnames(stab6,"NR_SNPs_total","nSNPs")
 setnames(stab6,"SE_exp1","se_exp1")
 setnames(stab6,"SE_exp2","se_exp2")
@@ -172,9 +187,9 @@ setnames(stab6,"HeteroStat_pval","pval_Q")
 #' # Save ####
 #' ***
 #' 
-WriteXLS(x = c("stab1","stab2","stab3","stab4","stab5","stab6"), 
+WriteXLS(x = c("stab0","stab1","stab2","stab3","stab4","stab5","stab6"), 
          ExcelFileName=paste0("../results/SupTables.xlsx"), 
-         SheetNames=paste0("TableS",1:6), 
+         SheetNames=c("Content", paste0("Table_S",1:6)), 
          AutoFilter=T, 
          BoldHeaderRow=T,
          FreezeRow=1)

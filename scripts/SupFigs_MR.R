@@ -65,12 +65,21 @@ MRTab[,sex := "females"]
 MRTab[grepl("all",exposure),sex := "all"]
 MRTab[,colGroup2 := paste0(colGroup,sex,sep="::")]
 
+#' For CAD, I only want to compare all with all and females with females
+filt1 = grepl("females",MRTab$sex) & MRTab$outcome == "CAD - all"
+table(filt1)
+filt2 = grepl("all",MRTab$sex) & MRTab$outcome == "CAD - females"
+table(filt2)
+filt = filt1 | filt2
+MRTab = MRTab[!filt,]
+MRTab[grepl("CAD",outcome),outcome := "CAD - Aragam et al."]
+
 #' Loop 
 myOutcomes = unique(MRTab$outcome)
-myOutcomes2 = c("BCS","BC","PAaD","CADf","CAD")
+myOutcomes2 = c("BCS","BC","PAaD","CAD")
 
 for(i in 1:length(myOutcomes)){
-  #i=5
+  #i=4
   plotData = copy(MRTab)
   plotData = plotData[outcome == myOutcomes[i],]
   setorder(plotData,-exposure)
@@ -80,8 +89,7 @@ for(i in 1:length(myOutcomes)){
   if(i==1) myYlab = "logHR for BC Survival (95% CI) \nper 1-SD increment in exposure levels"
   if(i==2) myYlab = "logOR for BC risk (95% CI) \nper 1-SD increment in exposure levels"
   if(i==3) myYlab = "1-SD increment for Parental Age at Death (95% CI) \nper 1-SD increment in exposure levels"
-  if(i==4) myYlab = "logOR for CAD risk in females (95% CI) \nper 1-SD increment in exposure levels"
-  if(i==5) myYlab = "logOR for CAD risk (95% CI) \nper 1-SD increment in exposure levels"
+  if(i==4) myYlab = "logOR for CAD risk (95% CI) \nper 1-SD increment in exposure levels"
   
   # plot
   p1 = ggplot(data=plotData, aes(x=exposure, y=beta, ymin=lowerCI95, ymax=upperCI95,color=colGroup2)) +
