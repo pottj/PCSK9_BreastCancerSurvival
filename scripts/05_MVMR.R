@@ -27,9 +27,7 @@ source("../SourceFile.R")
 #' # Load data ####
 #' ***
 load("../results/03_Exposure_for_MR_pruned.RData")
-load("../results/02_Outcome_for_MR.RData")
-OutcomeData = OutcomeData[rsID %in% ExposureData$rsID,]
-OutcomeData[,chr := as.numeric(chr)]
+load("../results/03b_Outcome_for_MR_filtered.RData")
 
 ExposureData = ExposureData[!grepl("gene expression",phenotype)]
 ExposureData = ExposureData[!grepl("ratio",setting)]
@@ -163,7 +161,7 @@ ToDoList = data.table(sex = rep(c("females","all"),each=4),
 OutcomeData[,trait := paste(phenotype,setting,sep = " - ")]
 
 dumTab1 = foreach(i = 1:dim(ToDoList)[1])%do%{
-  #i=1
+  #i=4
   myRow = ToDoList[i,]
   
   # get sample set (females or all)
@@ -194,16 +192,24 @@ dumTab1 = foreach(i = 1:dim(ToDoList)[1])%do%{
   myOutcomes = unique(outcome2$trait)
   
   dumTab4 = foreach(j = 1:length(myOutcomes))%do%{
-    #j=1
+    #j=6
     outcome = copy(outcome2)
     outcome = outcome[trait == myOutcomes[j],]
     setorder(outcome,chr,pos_b37)
-    stopifnot(outcome$rsID == exposure3$rsID)
-    stopifnot(outcome$EA == exposure1$EA)
+    
+    exposure21 = copy(exposure1)
+    exposure21 = exposure21[rsID %in% outcome$rsID]
+    exposure22 = copy(exposure2)
+    exposure22 = exposure22[rsID %in% outcome$rsID]
+    exposure23 = copy(exposure3)
+    exposure23 = exposure23[rsID %in% outcome$rsID]
+
+    stopifnot(outcome$rsID == exposure23$rsID)
+    stopifnot(outcome$EA == exposure21$EA)
     
     # running MR
-    data_beta = cbind(exposure1$beta,exposure2$beta)
-    data_SE = cbind(exposure1$se,exposure2$se)
+    data_beta = cbind(exposure21$beta,exposure22$beta)
+    data_SE = cbind(exposure21$se,exposure22$se)
     
     mvmr_obj = mr_mvinput(bx = as.matrix(data_beta),
                            bxse = as.matrix(data_SE),

@@ -27,9 +27,7 @@ source("../SourceFile.R")
 #' # Load data ####
 #' ***
 load("../results/03_Exposure_for_MR_pruned.RData")
-load("../results/02_Outcome_for_MR.RData")
-OutcomeData = OutcomeData[rsID %in% ExposureData$rsID,]
-OutcomeData[,chr := as.numeric(chr)]
+load("../results/03b_Outcome_for_MR_filtered.RData")
 
 #' # Filter for relevant phenotype ####
 #' ***
@@ -46,20 +44,22 @@ OutcomeData[,trait := paste(phenotype,setting,sep = " - ")]
 
 dumTab1 = foreach(i = 1:length(myTraits))%do%{
   #i=17
-  exposure = copy(ExposureData)
-  exposure = exposure[trait == myTraits[i],]
+  exposure2 = copy(ExposureData)
+  exposure2 = exposure2[trait == myTraits[i],]
   
   outcome2 = copy(OutcomeData)
-  outcome2 = outcome2[rsID %in% exposure$rsID]
+  outcome2 = outcome2[rsID %in% exposure2$rsID]
   myOutcomes = unique(outcome2$trait)
   
   dumTab2 = foreach(j = 1:length(myOutcomes))%do%{
-    #j=1
+    #j=6
     outcome = copy(outcome2)
     outcome = outcome[trait == myOutcomes[j],]
     
-    setorder(exposure,chr,pos_b37)
+    setorder(exposure2,chr,pos_b37)
     setorder(outcome,chr,pos_b37)
+    exposure = copy(exposure2)
+    exposure = exposure[rsID %in% outcome$rsID]
     stopifnot(exposure$rsID == outcome$rsID)
     
     if(dim(outcome)[1] == 1){

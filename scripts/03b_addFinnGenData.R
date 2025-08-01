@@ -1,0 +1,83 @@
+#' ---
+#' title: "MR: PCSK9 on outcomes"
+#' subtitle: "MR of PCSK9 on Breast Cancer Survival"
+#' author: "Janne Pott"
+#' date: "Last compiled on `r format(Sys.time(), '%d %B, %Y')`"
+#' output:
+#'   html_document:
+#'     toc: true
+#'     number_sections: true
+#'     toc_float: true
+#'     code_folding: show
+#' ---
+#'
+#' # Introduction ####
+#' ***
+#' 
+#' # Initialize ####
+#' ***
+rm(list = ls())
+time0<-Sys.time()
+server = "laptop_BSU"
+load_meta = F
+
+source("../SourceFile.R")
+.libPaths()
+
+#' # Load data ####
+#' ***
+load("../results/03_Exposure_for_MR_pruned.RData")
+load("../results/02_Outcome_for_MR.RData")
+OutcomeData = OutcomeData[rsID %in% ExposureData$rsID,]
+OutcomeData[,chr := as.numeric(chr)]
+
+#' # Load FinnGen data ####
+#' ***
+FinnGen = fread(FinnGen_BCS)
+head(FinnGen)
+BCAC = copy(OutcomeData)
+BCAC = BCAC[setting == "BCAC",]
+matched = match(FinnGen$rsID,BCAC$rsID)
+stopifnot(BCAC$rsID[matched] == FinnGen$rsID)
+BCAC = BCAC[matched,]
+
+stopifnot(BCAC$EA == FinnGen$EA)
+plot(BCAC$EAF,FinnGen$EAF)
+plot(BCAC$beta,FinnGen$logHR)
+cor.test(BCAC$beta,FinnGen$logHR)
+plot(FinnGen$logHR)
+
+filt = FinnGen$pval<0.05 | BCAC$pval<0.05
+plot(BCAC$beta[filt],FinnGen$logHR[filt])
+abline(0,1)
+cor.test(BCAC$beta[filt],FinnGen$logHR[filt])
+
+#' Okay, BCAC and FinnGen are not correlated - maybe due to sample selection (that is what I wanted to test here).
+#' Other thing: there are some really big effects for 5 SNPs (logHR>0.5) with low MAF - I will consider to remove them, because I think they are not plausible. 
+#' 
+#' Otherwise, I just try to make the data set as similar to BCAC as possible. 
+names(BCAC)
+names(FinnGen)
+FinnGen[,phenotype := "BCS"]
+FinnGen[,setting := "FinnGen"]
+FinnGen[,nSamples := 4648]
+FinnGen[,nCases := 288]
+setnames(FinnGen,"logHR","beta")
+table(names(FinnGen) %in% names(BCAC))
+setcolorder(FinnGen,names(BCAC))
+
+filt = FinnGen$beta > 0.5
+table(filt)
+FinnGen = FinnGen[!filt,]
+
+#' # Merga and save ####
+#' ***
+#' Merge with outcome data 
+OutcomeData = rbind(OutcomeData,FinnGen)
+
+save(OutcomeData,file = "../results/03b_Outcome_for_MR_filtered.RData")
+
+#' # Session Info ####
+#' ***
+sessionInfo()
+message("\nTOTAL TIME : " ,round(difftime(Sys.time(),time0,units = "mins"),3)," minutes")
