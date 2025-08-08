@@ -30,9 +30,13 @@ Publication in December 2024 from [Wenbin Mei et al.](https://doi.org/10.1016/j.
 
 **Outcome data**: 
 
-- Breast cancer survival (females) - GWAS: 
+- Breast cancer survival (females) - Consortium: 
     - publication: [Morra et al., 2021](https://breast-cancer-research.biomedcentral.com/articles/10.1186/s13058-021-01450-7)
     - data: [BCAC](http://bcac.ccge.medschl.cam.ac.uk); **please note**: website no longer working, data available upon request 
+- Breast cancer survival (females) - FinnGen: 
+    - data requested in collaboration with Johannes Kettunen & Ville Salo
+    - additive model for all relevant instruments
+    - recessive model for rs562556
 - Breast cancer survival (females) - rs562556: 
     - publication: [Mei et al., 2025](https://www.sciencedirect.com/science/article/pii/S0092867424013266?via%3Dihub)
     - data: [Mei et al., 2025](https://www.sciencedirect.com/science/article/pii/S0092867424013266?via%3Dihub#figs1); **please note**: HR and CIs extracted from Figure S1H (rs562556 association with breast cancer survival in different cohorts limited to European ancestry) 
