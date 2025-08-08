@@ -49,7 +49,7 @@ stab0 = data.table(Table = paste0("S",1:6),
 #' ***
 #' All instruments for MR approach (one line per SNP - exposure combination)
 #' 
-load("../results/03_Exposure_for_MR_pruned.RData")
+load("../results/03b_Exposure_for_MR_filtered.RData")
 ExposureData
 
 stab1 = copy(ExposureData)
@@ -95,7 +95,7 @@ setorder(stab2,-setting,chr,pos_b37)
 #' ***
 #' All summary statistics for all outcomes (one line per SNP - outcome combination)
 #' 
-load("../results/02_Outcome_for_MR.RData")
+load("../results/03b_Outcome_for_MR_filtered.RData")
 OutcomeData
 
 stab3 = copy(OutcomeData)
@@ -125,7 +125,7 @@ stopifnot(stab2$rsID %in% stab3$rsID)
 
 #' # Sup Tab 4 ####
 #' ***
-#' MR-IVW results & MR-ratio results (no rs562556)
+#' MR-IVW results 
 #' 
 load("../results/04_MR.RData")
 MRTab
@@ -133,6 +133,8 @@ MRTab[,pval_adj := p.adjust(p=pval,method = "fdr")]
 
 MRTab[outcome == "BC - FinnGen + UKB", outcome := "Breast Cancer - females"]
 MRTab[outcome == "BCS - BCAC", outcome := "Breast Cancer Survival - females - Morra et al."]
+MRTab[outcome == "BCS - FinnGen", outcome := "Breast Cancer Survival - females - FinnGen"]
+MRTab[outcome == "BCS - FinnGen_rec", outcome := "Breast Cancer Survival - females - FinnGen - recessive SNP effect"]
 MRTab[outcome == "BCS - Mei et al.", outcome := "Breast Cancer Survival - females - Mei at al."]
 MRTab[outcome == "CAD - all", outcome := "Coronary Artery Disease - all"]
 MRTab[outcome == "CAD - females", outcome := "Coronary Artery Disease - females"]
@@ -163,6 +165,7 @@ MVMRTab[,pval_adj2 := p.adjust(p=pval_exp2,method = "fdr")]
 
 stab6 = copy(MVMRTab)
 stab6[outcome == "BC - FinnGen + UKB", outcome := "Breast Cancer - females"]
+stab6[outcome == "BCS - FinnGen", outcome := "Breast Cancer Survival - females - FinnGen"]
 stab6[outcome == "BCS - BCAC", outcome := "Breast Cancer Survival - females - Morra et al."]
 stab6[outcome == "CAD - all", outcome := "Coronary Artery Disease - all"]
 stab6[outcome == "CAD - females", outcome := "Coronary Artery Disease - females"]
