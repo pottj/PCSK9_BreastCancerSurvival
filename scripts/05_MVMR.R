@@ -26,7 +26,7 @@ source("../SourceFile.R")
 
 #' # Load data ####
 #' ***
-load("../results/03_Exposure_for_MR_pruned.RData")
+load("../results/03b_Exposure_for_MR_filtered.RData")
 load("../results/03b_Outcome_for_MR_filtered.RData")
 
 ExposureData = ExposureData[!grepl("gene expression",phenotype)]

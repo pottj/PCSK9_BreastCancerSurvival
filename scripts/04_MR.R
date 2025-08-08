@@ -26,11 +26,20 @@ source("../SourceFile.R")
 
 #' # Load data ####
 #' ***
-load("../results/03_Exposure_for_MR_pruned.RData")
+load("../results/03b_Exposure_for_MR_filtered.RData")
 load("../results/03b_Outcome_for_MR_filtered.RData")
 
 #' # Filter for relevant phenotype ####
 #' ***
+#' I also want a PCSK9_HMGCR combination for LDL-C.
+#' 
+dummy1 = copy(ExposureData)
+dummy1 = dummy1[phenotype == "LDL-C levels",]
+dummy1 = dummy1[grepl("PCSK9",setting) | grepl("HMGCR",setting),]
+dummy1[grepl("all",setting),setting := "all PCSK9_HMGCR SNPs"]
+dummy1[grepl("females",setting),setting := "females PCSK9_HMGCR SNPs"]
+ExposureData = rbind(ExposureData,dummy1)
+
 ExposureData[,trait := paste(phenotype,setting,sep = " - ")]
 myTraits = unique(ExposureData$trait)
 myTraits2 = gsub("LDL-C levels - ","LDLC_",myTraits)
@@ -39,11 +48,12 @@ myTraits2 = gsub("PCSK9 protein levels - ","PE_",myTraits2)
 myTraits2 = gsub("[()]","",myTraits2)
 myTraits2 = gsub(" -","",myTraits2)
 myTraits2 = gsub(" ","_",myTraits2)
+myTraits2
 
 OutcomeData[,trait := paste(phenotype,setting,sep = " - ")]
 
 dumTab1 = foreach(i = 1:length(myTraits))%do%{
-  #i=17
+  #i=4
   exposure2 = copy(ExposureData)
   exposure2 = exposure2[trait == myTraits[i],]
   
@@ -52,7 +62,7 @@ dumTab1 = foreach(i = 1:length(myTraits))%do%{
   myOutcomes = unique(outcome2$trait)
   
   dumTab2 = foreach(j = 1:length(myOutcomes))%do%{
-    #j=6
+    #j=8
     outcome = copy(outcome2)
     outcome = outcome[trait == myOutcomes[j],]
     

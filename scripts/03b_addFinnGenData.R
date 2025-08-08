@@ -33,8 +33,11 @@ OutcomeData[,chr := as.numeric(chr)]
 
 #' # Load FinnGen data ####
 #' ***
-FinnGen = fread(FinnGen_BCS)
+FinnGen = fread(FinnGen_BCS_add)
 head(FinnGen)
+FinnGen_rec = fread(FinnGen_BCS_rec)
+head(FinnGen_rec)
+
 BCAC = copy(OutcomeData)
 BCAC = BCAC[setting == "BCAC",]
 matched = match(FinnGen$rsID,BCAC$rsID)
@@ -58,6 +61,8 @@ cor.test(BCAC$beta[filt],FinnGen$logHR[filt])
 #' Otherwise, I just try to make the data set as similar to BCAC as possible. 
 names(BCAC)
 names(FinnGen)
+names(FinnGen_rec)
+
 FinnGen[,phenotype := "BCS"]
 FinnGen[,setting := "FinnGen"]
 FinnGen[,nSamples := 4648]
@@ -66,6 +71,14 @@ setnames(FinnGen,"logHR","beta")
 table(names(FinnGen) %in% names(BCAC))
 setcolorder(FinnGen,names(BCAC))
 
+FinnGen_rec[,phenotype := "BCS"]
+FinnGen_rec[,setting := "FinnGen_rec"]
+FinnGen_rec[,nSamples := 4648]
+FinnGen_rec[,nCases := 288]
+setnames(FinnGen_rec,"logHR","beta")
+table(names(FinnGen_rec) %in% names(BCAC))
+setcolorder(FinnGen_rec,names(BCAC))
+
 filt = FinnGen$beta > 0.5
 table(filt)
 FinnGen = FinnGen[!filt,]
@@ -73,8 +86,14 @@ FinnGen = FinnGen[!filt,]
 #' # Merga and save ####
 #' ***
 #' Merge with outcome data 
-OutcomeData = rbind(OutcomeData,FinnGen)
+OutcomeData = rbind(OutcomeData,FinnGen,FinnGen_rec)
 
+#' Reduce to overlapping SNPs (I want the same SNP set in all my analyses!)
+ExposureData[!is.element(rsID,FinnGen$rsID), ]
+ExposureData = ExposureData[is.element(rsID,FinnGen$rsID),]
+OutcomeData = OutcomeData[is.element(rsID,ExposureData$rsID),]
+
+save(ExposureData,file = "../results/03b_Exposure_for_MR_filtered.RData")
 save(OutcomeData,file = "../results/03b_Outcome_for_MR_filtered.RData")
 
 #' # Session Info ####
