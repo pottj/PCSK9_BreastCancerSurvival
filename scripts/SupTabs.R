@@ -86,9 +86,16 @@ stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting %in% c("females gw SN
 stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting %in% c("all gw SNPs"),rsID] & setting == "all",flag4_genome_wide := T]
 stab2 = stab2[flag1_PCSK9_v1==T | flag2_PCSK9_v2==T | flag3_PCSK9_HMGCR==T | flag4_genome_wide==T,]
 
+stab2[,flag4_genome_wide := NULL]
+stab2[,flag2_PCSK9_v2 := NULL]
+stab2 = stab2[flag1_PCSK9_v1==T | flag3_PCSK9_HMGCR==T,]
+
+setnames(stab2,"flag1_PCSK9_v1","flag1_PCSK9")
+setnames(stab2,"flag3_PCSK9_HMGCR","flag2_PCSK9_HMGCR")
+
 #' Change order 
 names(stab2)
-stab2 = stab2[,c(1:3,21,4:12,19,13:18,20,22:25)]
+stab2 = stab2[,c(1:3,21,4:12,19,13:18,20,22:23)]
 setorder(stab2,-setting,chr,pos_b37)
 
 #' # Sup Tab 3 ####
@@ -173,10 +180,9 @@ stab6[outcome == "PLD - UKB", outcome := "Parental Longevity - all"]
 
 setnames(stab6,"sex","exposure_sex")
 setnames(stab6,"SNPset","flag")
-stab6[flag == "PCSK9_v1", flag := "flag1_PVSK9_v1"]
-stab6[flag == "PCSK9_v2", flag := "flag2_PCSK9_v2"]
-stab6[flag == "PCSK9_HMGCR", flag := "flag3_PCSK9_HMGCR"]
-stab6[flag == "genome-wide", flag := "flag4_genome_wide"]
+stab6 = stab6[flag %in% c("PCSK9_v1","PCSK9_HMGCR")]
+stab6[flag == "PCSK9_v1", flag := "flag1_PCSK9"]
+stab6[flag == "PCSK9_HMGCR", flag := "flag2_PCSK9_HMGCR"]
 
 stab6 = stab6[,c(1,3,4,2,5:8,17,9:13,18,14:16)]
 setnames(stab6,"NR_SNPs_total","nSNPs")
@@ -190,13 +196,9 @@ setnames(stab6,"HeteroStat_pval","pval_Q")
 #' # Save ####
 #' ***
 #' 
-WriteXLS(x = c("stab0","stab1","stab2","stab3","stab4","stab5","stab6"), 
-         ExcelFileName=paste0("../results/SupTables.xlsx"), 
-         SheetNames=c("Content", paste0("Table_S",1:6)), 
-         AutoFilter=T, 
-         BoldHeaderRow=T,
-         FreezeRow=1)
-
+myList = list(stab0,stab1,stab2,stab3,stab5,stab4,stab6)
+write_xlsx(x = myList, 
+           path = paste0("../results/SupTables.xlsx"),col_names = T,format_headers = T)
 save(stab1,stab2,stab3,stab4,stab5,stab6,file = "../results/SupTables.RData")
 
 #' # Session Info ####

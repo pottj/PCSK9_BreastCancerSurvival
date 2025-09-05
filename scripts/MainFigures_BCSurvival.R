@@ -37,8 +37,7 @@ MVMRTab[,pval_adj2 := p.adjust(p=pval_exp2,method = "fdr")]
 plotData1 = copy(MRTab)
 plotData1[,unique(outcome)]
 plotData1 = plotData1[grepl("BCS",outcome),]
-plotData1 = plotData1[!grepl("gene expression",exposure),]
-plotData1 = plotData1[method == "MR-ratio",]
+plotData1 = plotData1[grepl("ratio",exposure),]
 plotData1[,sex := "both sexes"]
 plotData1[grepl("females",exposure),sex := "females"]
 
@@ -50,7 +49,9 @@ plotData1[outcome == "BCS - FinnGen", outcome := "[FinnGen]"]
 plotData1[outcome == "BCS - FinnGen_rec", outcome := "[FinnGen]"]
 plotData1[outcome == "BCS - Mei et al.", outcome := "[Mei et al.]"]
 
-plotData1[grepl("PCSK9",exposure), exposure := "PCSK9"]
+plotData1[grepl("PCSK9 protein",exposure), exposure := "PCSK9"]
+plotData1[grepl("PCSK9 gene",exposure), exposure := gsub("gene expression","GE",exposure)]
+plotData1[grepl("GE",exposure), exposure := gsub(" ratio","",exposure)]
 plotData1[grepl("LDL",exposure), exposure := "LDL-C"]
 
 #' add columns necessary for plotting
@@ -58,28 +59,35 @@ plotData1[,lowerCI95 := beta-1.96*se]
 plotData1[,upperCI95 := beta+1.96*se]
 
 plotData1[,signif := ifelse(pval_adj < 0.05,1,0)]
-plotData1[signif==1, y_ast := 2]
+plotData1[signif==1 & !grepl("GE",exposure), y_ast := 31]
+plotData1[signif==1 & grepl("GE",exposure), y_ast := 3]
+plotData1[signif==1, y_ast := ceiling(upperCI95)]
 
 plotData1[,dummy := paste(outcome,exposure,method)]
-plotData1[,dummy2 := "PCSK9 function on BC Survival"]
-plotData1 = plotData1[exposure=="PCSK9"]
+plotData1[grepl("GE",exposure),dummy2 := "B) PCSK9 GE level"]
+plotData1[!grepl("GE",exposure),dummy2 := "A) PCSK9 protein levels"]
+#plotData1 = plotData1[exposure=="PCSK9"]
+plotData1 = plotData1[exposure!="LDL-C"]
+plotData1[grepl("GE",exposure),exposure2 := gsub("PCSK9 GE - ","",exposure)]
+plotData1[!grepl("GE",exposure),exposure2 := sex]
+plotData1[grepl("Muscularis",exposure),exposure2 := gsub("Muscularis","\nMuscularis",exposure2)]
 
-p1 = ggplot(data=plotData1, aes(x=dummy, y=beta,
+p1 = ggplot(data=plotData1, aes(x=exposure2, y=beta,
                                 ymin=lowerCI95, ymax=upperCI95,
                                 color=outcome,shape=method,
                                 alpha=sex,fill=outcome)) +
   geom_hline(yintercept=0, lty=2, linewidth =1) +  
   geom_pointrange(position = position_dodge2(width = 0.4),
                   size=1,linewidth=1)+ 
-  geom_point(aes(x=dummy, y=y_ast),
+  geom_point(aes(x=exposure2, y=y_ast),
              shape = "*", size=8, show.legend = FALSE, 
              position = position_dodge2(width = 0.4),
              color="black",alpha=1)+
-  facet_wrap(~dummy2,scales = "free_x")+ 
+  facet_wrap(~dummy2,scales = "free")+ 
   coord_flip() + 
   ggtitle("")+
   xlab("") +
-  ylab("logHR for BC Survival (95% CI)\nper 1-SD increment in PCSK9 levels") + 
+  ylab("logHR for BC Survival (95% CI)\nper 1-SD increment in PCSK9 levels by rs562556") + 
   #scale_y_continuous(limits = c(-20, 31)) + 
   scale_colour_manual(values = c("darkorange","dodgerblue3","grey40")) +
   scale_fill_manual(values = c("darkorange","dodgerblue3","grey40")) +
@@ -308,7 +316,7 @@ dev.off()
 
 #' # Plot 5: Combine 1 & 2 ###
 #' ***
-plotData12 = rbind(plotData1,plotData2,fill=T)
+plotData12 = rbind(plotData1[grepl("A)",dummy2)],plotData2,fill=T)
 
 plotData12[,table(method)]
 
@@ -324,8 +332,8 @@ plotData12[is.na(dummy2),dummy2 := dummy]
 plotData12[exposure != "PCSK9",dummy := exposure]
 
 plotData12[,table(dummy2)]
-plotData12[grepl("function",dummy2),dummy2 := "PCSK9 function (rs562556)"]
-plotData12[grepl("level",dummy2),dummy2 := "PCSK9 levels (QTLs)"]
+plotData12[grepl("A)",dummy2),dummy2 := "A) MR-ratio using rs562556"]
+plotData12[!grepl("A)",dummy2),dummy2 := "B) MR-IVW/-ratio using \nbest QTLs and up to 4 SNPs"]
 
 plotData12[1:4,dummy]
 plotData12[1:4,dummy := "WB PE"]
@@ -449,7 +457,15 @@ plotData34 = plotData34[exposure3 != "MR - PCSK9"]
 
 plotData34[,table(dummy)]
 plotData34[,dummy := gsub("cond","\ncond",dummy)]
-plotData34[grepl("LDL-C level",dummy),dummy := paste0(dummy,"\n using multiple QTLs")]
+plotData34[grepl("LDL-C level",dummy),dummy := paste0("A) LDL-C levels,\n using multiple QTLs")]
+plotData34[grepl("PCSK9 level",dummy),dummy := paste0("B) ",dummy)]
+plotData34[,dummy := gsub(" on BC Survival","",dummy)]
+
+plotData34[,table(exposure3)]
+plotData34[exposure3 == "1 gw SNPs",exposure3 := "any gw. locus"]
+plotData34[exposure3 == "2 PCSK9 SNPs",exposure3 := "PCSK9"]
+plotData34[exposure3 == "3 PCSK9 and HMGCR SNPs",exposure3 := "HMGCR + PCSK9"]
+plotData34[exposure3 == "4 HMGCR SNPs",exposure3 := "HMGCR"]
 
 p34 = ggplot(data=plotData34, aes(x=exposure3, y=beta,
                                   ymin=lowerCI95, ymax=upperCI95,
@@ -486,7 +502,7 @@ p34 = ggplot(data=plotData34, aes(x=exposure3, y=beta,
         axis.title.x = element_text(family="Times New Roman",colour = "Black", margin = margin(t = 20, r = 0, b = 0, l = 0)),
         axis.title.y = element_text(family="Times New Roman",colour = "Black", margin = margin(t = 0, r = 20, b = 0, l = 0)),
         plot.title = element_text(family="Times New Roman", colour = "Black", margin = margin(t = 0, r = 0, b = 20, l = 0)),
-        axis.text.y=element_text(family="Times New Roman",size=15, color = "Black"), 
+        axis.text.y=element_text(family="Times New Roman",size=10, color = "Black",face = "italic"), 
         axis.text.x=element_text(family="Times New Roman",size=15, color = "Black"), 
         text=element_text(family="Times New Roman",size=15), plot.margin = margin(t = 0.25, r = 1, b = 0.5, l = 0.25, unit = "cm"))+ 
   labs(color = "Outcome source",shape = "MR method", alpha = "Exposure sex")+ guides(fill = "none")
