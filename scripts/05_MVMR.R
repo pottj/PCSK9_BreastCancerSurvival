@@ -29,8 +29,8 @@ source("../SourceFile.R")
 load("../results/03b_Exposure_for_MR_filtered.RData")
 load("../results/03b_Outcome_for_MR_filtered.RData")
 
-ExposureData = ExposureData[!grepl("gene expression",phenotype)]
-ExposureData = ExposureData[!grepl("ratio",setting)]
+ExposureData = ExposureData[!grepl("GE",phenotype)]
+ExposureData = ExposureData[!grepl("rs562556",MRapproach)]
 ExposureData[,.N,by=c("phenotype","setting")]
 
 SNPList = copy(ExposureData)
@@ -149,19 +149,23 @@ setorder(pQTLData,chr,pos_b37,setting)
 setorder(LDLCData,chr,pos_b37,setting)
 plot(pQTLData$EAF,LDLCData$EAF)
 
-ExposureData[setting == "free",setting := "all"]
-ExposureData[grepl("gw",setting),setting2 := "genome-wide"]
-ExposureData[grepl("PCSK9",setting),setting2 := "PCSK9_v2"]
-ExposureData[grepl("HMGCR",setting),setting2 := "PCSK9_HMGCR"]
-ExposureData[is.na(setting2),setting2 := "PCSK9_v1"]
+ExposureData = ExposureData[instrumentLocus %in% c("PCSK9","HMGCR")]
+ExposureData[grepl("PCSK9",phenotype),setting2 := "PCSK9"]
+ExposureData[grepl("LDL",phenotype),setting2 := "PCSK9_HMGCR"]
 ExposureData = ExposureData[rsID %in% pQTLData$rsID,]
 
-ToDoList = data.table(sex = rep(c("females","all"),each=4),
-                      SNPset = rep(c("PCSK9_v1","PCSK9_v2","PCSK9_HMGCR","genome-wide"),2))
-OutcomeData[,trait := paste(phenotype,setting,sep = " - ")]
+ToDoList = data.table(sex = rep(c("females","all"),each=2),
+                      SNPset = rep(c("PCSK9","PCSK9_HMGCR"),2))
+OutcomeData[,trait := paste(phenotype,setting,source,geneticModel,sep = " - ")]
+myYTraits = unique(OutcomeData$trait)
+myYTraits2 = gsub(" et al.","",myYTraits)
+myYTraits2 = gsub(" - ","_",myYTraits2)
+myYTraits2 = gsub(" & ","",myYTraits2)
+myYTraits2 = gsub("-","",myYTraits2)
+myYTraits2
 
 dumTab1 = foreach(i = 1:dim(ToDoList)[1])%do%{
-  #i=4
+  #i=1
   myRow = ToDoList[i,]
   
   # get sample set (females or all)
@@ -172,12 +176,9 @@ dumTab1 = foreach(i = 1:dim(ToDoList)[1])%do%{
   
   # get SNP set
   exposure3 = copy(ExposureData)
-  if(myRow$SNPset=="PCSK9_HMGCR"){
-    exposure3 = exposure3[(setting2 == myRow$SNPset | setting2 == "PCSK9_v2") & grepl(myRow$sex,setting),]
-    
-  }else{
-    exposure3 = exposure3[setting2 == myRow$SNPset & grepl(myRow$sex,setting),]
-  }
+  exposure3 = exposure3[setting2 == myRow$SNPset]
+  exposure3 = exposure3[setting == myRow$sex]
+  
   exposure1 = exposure1[rsID %in% exposure3$rsID,]
   exposure2 = exposure2[rsID %in% exposure3$rsID,]
   
@@ -190,9 +191,14 @@ dumTab1 = foreach(i = 1:dim(ToDoList)[1])%do%{
   outcome2 = copy(OutcomeData)
   outcome2 = outcome2[rsID %in% exposure3$rsID]
   myOutcomes = unique(outcome2$trait)
+  myOutcomes2 = gsub(" et al.","",myOutcomes)
+  myOutcomes2 = gsub(" - ","_",myOutcomes2)
+  myOutcomes2 = gsub(" & ","",myOutcomes2)
+  myOutcomes2 = gsub("-","",myOutcomes2)
+  myOutcomes2
   
   dumTab4 = foreach(j = 1:length(myOutcomes))%do%{
-    #j=6
+    #j=1
     outcome = copy(outcome2)
     outcome = outcome[trait == myOutcomes[j],]
     setorder(outcome,chr,pos_b37)
@@ -264,6 +270,7 @@ names(ExposureData_MVMR)[7] = "exposure1"
 names(ExposureData_MVMR)[8:12] = paste0("exp1_",names(ExposureData_MVMR)[8:12])
 names(ExposureData_MVMR)[13] = "exposure2"
 names(ExposureData_MVMR)[14:18] = paste0("exp2_",names(ExposureData_MVMR)[14:18])
+ExposureData_MVMR = ExposureData_MVMR[rsID %in% ExposureData$rsID,]
 
 save(ExposureData_MVMR,file = "../results/05_MVMR_input.RData")
 

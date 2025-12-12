@@ -16,7 +16,7 @@
 #' 
 #' In this script, I extract all necessary SNP data for the exposures: PCSK9 gene expression ([GTEx v10](https://gtexportal.org/home/downloads/adult-gtex/qtl)), PCSK9 protein levels ([Pott et al.](https://zenodo.org/records/10600167)), and LDL-C levels ([GLGC](https://csg.sph.umich.edu/willer/public/glgc-lipids2021/))
 #' 
-#' The GTEx data will be LD-based pruned using [FUMA](https://fuma.ctglab.nl/). For the PCSK9 protein levels, I will use the same SNPs as reported independent in the respective publication. For LDL-C, I will perform position-based pruning (I cannot upload the data to FUMA, as FUMA does not tolerate p-value of 0).  
+#' The GTEx data will be LD-based pruned using [FUMA](https://fuma.ctglab.nl/). For the PCSK9 protein levels, I will use the same SNPs as reported independent in the respective publication. For LDL-C, I will perform position-based pruning (I cannot upload the data to FUMA, as FUMA does not tolerate p-value of 0). However, pruning will be performed after I filter for outcome availability.   
 #' 
 #' # Initialize ####
 #' ***
@@ -83,7 +83,7 @@ dumTab1 = foreach(i = 1:length(myTissues))%do%{
   data0[,rsID := GTEx[matched,SNP.Id]]
   data0[,pos_b37 := GTEx[matched,posb37]]
   data0[,tissue := myTissues_GTExNotation[i]]
-  data0[,phenotype := "PCSK9 gene expression"]
+  data0[,phenotype := "PCSK9 GE levels"]
   
   # select relevant columns
   names(data0)
@@ -100,6 +100,12 @@ GTExData[pval<5e-8,.N,by=setting]
 GTExData[,.N,by=setting]
 GTExData[,min(pval),by=setting]
 GTExData[,max(pval),by=setting]
+GTExData[,setting := gsub(" - "," ",setting)]
+GTExData[,setting := gsub("[()]","",setting)]
+GTExData[,source := "GTExv10"]
+GTExData[,MRapproach := "QTL"]
+GTExData[grepl("ratio",setting),MRapproach := "rs562556"]
+GTExData[,setting := gsub(" ratio","",setting)]
 
 save(GTExData,file = "../temp/GTExV10_potentialIVs.RData")
 
@@ -119,7 +125,7 @@ dumTab2 = foreach(i = 1:length(myFiles))%do%{
   data0[,rsID := gsub(":.*","",markername)]
   data0 = data0[rsID %in% mySNPs,]
   data0[,setting := gsub("PCSK9_","",phenotype)]
-  data0[,phenotype := "PCSK9 protein levels"]
+  data0[,phenotype := "PCSK9 PE levels"]
   
   # select relevant columns
   names(data0)
@@ -169,6 +175,11 @@ pQTLData2[rsID=="rs562556",setting := paste(setting,"ratio")]
 pQTLData = rbind(pQTLData[grepl("females",setting),],pQTLData2)
 setorder(pQTLData,setting,chr,pos_b37)
 
+pQTLData[,source := "Pott et al."]
+pQTLData[,MRapproach := "QTL"]
+pQTLData[grepl("ratio",setting),MRapproach := "rs562556"]
+pQTLData[,setting := gsub(" ratio","",setting)]
+pQTLData
 save(pQTLData,file = "../temp/Pott_potentialIVs_MR.RData")
 
 #' # Load GLGC data ####
@@ -203,12 +214,16 @@ dumTab3 = foreach(i = 1:length(myFiles))%do%{
 }
 LDLCData = rbindlist(dumTab3)
 LDLCData[,.N,by=setting]
+LDLCData[grepl("female",setting),source := "Kanoni et al."]
+LDLCData[grepl("all",setting),source := "Graham et al."]
+LDLCData[,MRapproach := "QTL"]
+LDLCData[rsID == "rs562556",MRapproach := "rs562556"]
+LDLCData
 
 #' # Merge data ####
 #' ***
 ExposureData = rbind(pQTLData,GTExData,LDLCData,fill=T,use.names=T)
 ExposureData[, absZScore := abs(beta/se)]
-ExposureData[phenotype == "LDL-C levels" & rsID == "rs562556", setting := paste(setting, "ratio") ]
 
 ExposureData[,min(absZScore),by=c("phenotype", "setting")]
 ExposureData[,max(absZScore),by=c("phenotype", "setting")]
@@ -264,6 +279,7 @@ ExposureData = ExposureData[rsID %in% SNPList$rsID,]
 
 #' # Save data ####
 #' ***
+ExposureData[,exposureID := paste(phenotype,setting,source,MRapproach,sep=" - ")]
 save(ExposureData, file = "../results/01_Exposure_for_MR.RData")
 
 #' # Session Info ####

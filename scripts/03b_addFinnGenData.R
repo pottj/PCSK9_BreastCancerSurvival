@@ -39,7 +39,7 @@ FinnGen_rec = fread(FinnGen_BCS_rec)
 head(FinnGen_rec)
 
 BCAC = copy(OutcomeData)
-BCAC = BCAC[setting == "BCAC",]
+BCAC = BCAC[source == "Morra et al.",]
 matched = match(FinnGen$rsID,BCAC$rsID)
 stopifnot(BCAC$rsID[matched] == FinnGen$rsID)
 BCAC = BCAC[matched,]
@@ -64,18 +64,24 @@ names(FinnGen)
 names(FinnGen_rec)
 
 FinnGen[,phenotype := "BCS"]
-FinnGen[,setting := "FinnGen"]
+FinnGen[,setting := "females"]
+FinnGen[,source := "FinnGen"]
+FinnGen[,geneticModel := "additive"]
 FinnGen[,nSamples := 4648]
 FinnGen[,nCases := 288]
 setnames(FinnGen,"logHR","beta")
+FinnGen[,outcomeID := paste(phenotype,setting,source,geneticModel,sep=" - ")]
 table(names(FinnGen) %in% names(BCAC))
 setcolorder(FinnGen,names(BCAC))
 
 FinnGen_rec[,phenotype := "BCS"]
-FinnGen_rec[,setting := "FinnGen_rec"]
+FinnGen_rec[,setting := "females"]
+FinnGen_rec[,source := "FinnGen"]
+FinnGen_rec[,geneticModel := "recessive"]
 FinnGen_rec[,nSamples := 4648]
 FinnGen_rec[,nCases := 288]
 setnames(FinnGen_rec,"logHR","beta")
+FinnGen_rec[,outcomeID := paste(phenotype,setting,source,geneticModel,sep=" - ")]
 table(names(FinnGen_rec) %in% names(BCAC))
 setcolorder(FinnGen_rec,names(BCAC))
 

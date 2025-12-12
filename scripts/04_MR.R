@@ -35,34 +35,45 @@ load("../results/03b_Outcome_for_MR_filtered.RData")
 #' 
 dummy1 = copy(ExposureData)
 dummy1 = dummy1[phenotype == "LDL-C levels",]
-dummy1 = dummy1[grepl("PCSK9",setting) | grepl("HMGCR",setting),]
-dummy1[grepl("all",setting),setting := "all PCSK9_HMGCR SNPs"]
-dummy1[grepl("females",setting),setting := "females PCSK9_HMGCR SNPs"]
+dummy1 = dummy1[grepl("PCSK9",instrumentLocus) | grepl("HMGCR",instrumentLocus),]
+dummy1 = dummy1[MRapproach == "QTL"]
+dummy1[,instrumentLocus := "PCSK9 and HMGCR"]
 ExposureData = rbind(ExposureData,dummy1)
 
-ExposureData[,trait := paste(phenotype,setting,sep = " - ")]
+ExposureData[,trait := paste(phenotype,setting,instrumentLocus,MRapproach,sep=" - ")]
 myTraits = unique(ExposureData$trait)
-myTraits2 = gsub("LDL-C levels - ","LDLC_",myTraits)
-myTraits2 = gsub("PCSK9 gene expression - ","GE_",myTraits2)
-myTraits2 = gsub("PCSK9 protein levels - ","PE_",myTraits2)
-myTraits2 = gsub("[()]","",myTraits2)
-myTraits2 = gsub(" -","",myTraits2)
-myTraits2 = gsub(" ","_",myTraits2)
+myTraits2 = gsub("LDL-C levels","LDLC",myTraits)
+myTraits2 = gsub("PCSK9 GE levels","PCSK9",myTraits2)
+myTraits2 = gsub("PCSK9 PE levels","PCSK9",myTraits2)
+myTraits2 = gsub(" - ","_",myTraits2)
+myTraits2 = gsub(" ","",myTraits2)
+myTraits2 = gsub("-","",myTraits2)
 myTraits2
 
-OutcomeData[,trait := paste(phenotype,setting,sep = " - ")]
+OutcomeData[,trait := paste(phenotype,setting,source,geneticModel,sep = " - ")]
+myYTraits = unique(OutcomeData$trait)
+myYTraits2 = gsub(" et al.","",myYTraits)
+myYTraits2 = gsub(" - ","_",myYTraits2)
+myYTraits2 = gsub(" & ","",myYTraits2)
+myYTraits2 = gsub("-","",myYTraits2)
+myYTraits2
 
 dumTab1 = foreach(i = 1:length(myTraits))%do%{
-  #i=4
+  #i=1
   exposure2 = copy(ExposureData)
   exposure2 = exposure2[trait == myTraits[i],]
   
   outcome2 = copy(OutcomeData)
   outcome2 = outcome2[rsID %in% exposure2$rsID]
   myOutcomes = unique(outcome2$trait)
+  myOutcomes2 = gsub(" et al.","",myOutcomes)
+  myOutcomes2 = gsub(" - ","_",myOutcomes2)
+  myOutcomes2 = gsub(" & ","",myOutcomes2)
+  myOutcomes2 = gsub("-","",myOutcomes2)
+  myOutcomes2
   
   dumTab2 = foreach(j = 1:length(myOutcomes))%do%{
-    #j=8
+    #j=1
     outcome = copy(outcome2)
     outcome = outcome[trait == myOutcomes[j],]
     
@@ -96,11 +107,11 @@ dumTab1 = foreach(i = 1:length(myTraits))%do%{
       
       mr_plot(mrob, interactive = F,labels = T)
       filename = paste0("../results/04_ScatterPlot_IVW/",myTraits2[i],
-                        "___",myOutcomes[j],".png") 
+                        "___",myOutcomes2[j],".png")
       filename = gsub(" - ","_",filename)
       filename = gsub(" + ","_",filename)
       filename = gsub(" ","_",filename)
-      
+
       ggsave(filename,
              height = 7, width = 7)
       

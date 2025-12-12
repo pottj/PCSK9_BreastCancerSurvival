@@ -32,7 +32,7 @@ ExposureData[,dumID3 := paste0(chr,":",pos_b37,"_",EA,"_",OA)]
 ExposureData[,dumID4 := paste0(chr,":",pos_b37,"_",OA,"_",EA)]
 
 SNPList = copy(ExposureData)
-SNPList = SNPList[,c(1,3:6,16:19)]
+SNPList = SNPList[,c(1,3:6,19:22)]
 SNPList = distinct(SNPList)
 SNPList[,chrPos := paste(chr,pos_b37,sep = "_")]
 
@@ -40,22 +40,25 @@ SNPList[,chrPos := paste(chr,pos_b37,sep = "_")]
 #' ***
 #' Load data
 BCAC = fread(BCAC_BCS)
+names(BCAC)
 
 #' Remove duplicated chr_pos (potential triallelic SNPs or other artifacts)
-BCAC[,chrPos := paste(chromosome,position,sep="_")]
+BCAC[,chrPos := paste(Chromosome,Position,sep="_")]
 badSNPs = BCAC[duplicated(chrPos),chrPos]
 BCAC = BCAC[!is.element(chrPos,badSNPs),]
 
 #' Filter for overlapping SNPs
-BCAC = BCAC[snp %in% SNPList$dumID1 | snp %in% SNPList$dumID2,]
-BCAC[,EAF := (eaf_a1_cogs + eaf_a1_onco)/2]
-BCAC[eaf_a1_cogs==0,EAF := eaf_a1_onco]
-BCAC[eaf_a1_onco==0,EAF := eaf_a1_cogs]
+BCAC = BCAC[Variant %in% SNPList$dumID1 | Variant %in% SNPList$dumID2,]
+BCAC[,EAF := (exp_freq_a1_iCOGS + exp_freq_a1_OncoArray)/2]
+BCAC[exp_freq_a1_iCOGS==0,EAF := exp_freq_a1_OncoArray]
+BCAC[is.na(exp_freq_a1_iCOGS),EAF := exp_freq_a1_OncoArray]
+BCAC[exp_freq_a1_OncoArray==0,EAF := exp_freq_a1_iCOGS]
+BCAC[is.na(exp_freq_a1_OncoArray),EAF := exp_freq_a1_iCOGS]
 
 #' Check alleles
 SNPList[,flag_BCS_BCAC := F]
 SNPList[,flag_BCS_BCAC := F]
-SNPList[dumID1 %in% BCAC$snp | dumID2 %in% BCAC$snp,flag_BCS_BCAC := T]
+SNPList[dumID1 %in% BCAC$Variant | dumID2 %in% BCAC$Variant,flag_BCS_BCAC := T]
 SNPList[,table(flag_BCS_BCAC)]
 
 matched = match(BCAC$chrPos,SNPList$chrPos)
@@ -66,18 +69,19 @@ BCAC[,EA := SNPList[matched,EA]]
 BCAC[,OA := SNPList[matched,OA]]
 
 BCAC[EA != a1, EAF := 1-EAF]
-BCAC[EA != a1, beta_meta := beta_meta*(-1)]
+BCAC[EA != a1,Beta := Beta*(-1)]
 
 #' Get all relevant columns
 BCAC[,phenotype := "BCS"]
-BCAC[,setting := "BCAC"]
-BCAC[,nSamples := 91686 + 7531]
+BCAC[,setting := "females"]
+BCAC[,source := "Morra et al."]
+BCAC[,nSamples := 91686]
 BCAC[,nCases := 7531]
-names(BCAC)[c(20,2,3,22,21,23,24,19,25,26,14,15,16)]
-BCAC = BCAC[,c(20,2,3,22,21,23,24,19,25,26,14,15,16)]
+names(BCAC)[c(20,2,3,22,21,23,24,25,19,26,27,14,15,16)]
+BCAC = BCAC[,c(20,2,3,22,21,23,24,25,19,26,27,14,15,16)]
 head(BCAC)
 names(BCAC) = c("rsID","chr","pos_b37","OA","EA",
-                "phenotype","setting","EAF","nSamples","nCases","beta","se","pval")
+                "phenotype","setting","source","EAF","nSamples","nCases","beta","se","pval")
 
 #' Sanity check
 matched = match(ExposureData$rsID,BCAC$rsID)
@@ -111,17 +115,31 @@ meta = metagen(TE = BCS_Mei[filt,log(HR)],
                lower = BCS_Mei[filt,log(CI_low)], upper = BCS_Mei[filt,log(CI_up)],
                sm = "HR", studlab = BCS_Mei[filt,Study])
 summary(meta)
+
 forest(meta)
+
+filename = paste0("../results/02_ForestPlot_Mei_data.png")
+png(filename = filename,width = 1900, height = 600, res=200)
+forest(meta)
+dev.off()
 
 #' Summarize in the same way as BCAC. Note: Mei et al. used A as effect allele, so I have to switch the direction of the beta estimate
 BCS = copy(BCAC)
 BCS = BCS[rsID == "rs562556",]
-BCS[,setting := "Mei et al."]
+BCS[,source := "Mei et al."]
 BCS[,nSamples := NA]
 BCS[,nCases := NA]
 BCS[,beta := -meta$TE.fixed]
 BCS[,se := meta$seTE.fixed]
 BCS[,pval := meta$pval.fixed]
+
+BCS = rbind(BCS,BCS,BCS,BCS,BCS)
+BCS[2:5, source := meta$studlab]
+BCS[2:5, beta := -meta$TE]
+BCS[2:5, se := meta$seTE]
+BCS[2:5, pval := meta$pval]
+BCS[,source := gsub(", .*","",source)]
+BCS
 
 save(SNPList,BCAC,BCS,file = "../temp/Outcomes_unpruned.RData")
 
@@ -160,14 +178,15 @@ BC[EA != ALT, all_inv_var_meta_beta := all_inv_var_meta_beta*(-1)]
 
 #' Get all relevant columns
 BC[,phenotype := "BC"]
-BC[,setting := "FinnGen + UKB"]
+BC[,setting := "females"]
+BC[,source := "FinnGen + UKB"]
 BC[,nSamples := 18786 + 11807 + 182927 + 205913]
 BC[,nCases := 18786 + 11807]
-names(BC)[c(22,1,25,2,27,26,28,29,24,30,31,17,18,19)]
-BC = BC[,c(22,1,25,2,27,26,28,29,24,30,31,17,18,19)]
+names(BC)[c(22,1,25,2,27,26,28,29,30,24,31,32,17,18,19)]
+BC = BC[,c(22,1,25,2,27,26,28,29,30,24,31,32,17,18,19)]
 head(BC)
 names(BC) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-              "phenotype","setting","EAF","nSamples","nCases","beta","se","pval")
+              "phenotype","setting","source","EAF","nSamples","nCases","beta","se","pval")
 
 #' Sanity check
 matched = match(ExposureData$rsID,BC$rsID)
@@ -221,13 +240,14 @@ PLD[EA != hm_effect_allele, beta2 := beta2*(-1)]
 
 #' Get all relevant columns
 PLD[,phenotype := "PLD"]
-PLD[,setting := "UKB"]
+PLD[,setting := "all"]
+PLD[,source := "Pilling et al."]
 PLD[,nSamples := 208118]
-names(PLD)[c(2,3,26,4,28,27,31,32,29,33,30,20,21)]
-PLD = PLD[,c(2,3,26,4,28,27,31,32,29,33,30,20,21)]
+names(PLD)[c(2,3,26,4,28,27,31,32,33,29,34,30,20,21)]
+PLD = PLD[,c(2,3,26,4,28,27,31,32,33,29,34,30,20,21)]
 head(PLD)
 names(PLD) = c("rsID","chr","pos_b37","pos_b38","OA","EA",
-              "phenotype","setting","EAF","nSamples","beta","se","pval")
+              "phenotype","setting","source","EAF","nSamples","beta","se","pval")
 
 #' Sanity check
 matched = match(ExposureData$rsID,PLD$rsID)
@@ -283,11 +303,12 @@ CAD_f[EA != reference_allele, beta2 := beta2*(-1)]
 #' Get all relevant columns
 CAD_f[,phenotype := "CAD"]
 CAD_f[,setting := "females"]
-names(CAD_f)[c(38,41,44,46,45,49,50,47,35,48,29,33)]
-CAD_f = CAD_f[,c(38,41,44,46,45,49,50,47,35,48,29,33)]
+CAD_f[,source := "Aragam et al."]
+names(CAD_f)[c(38,41,44,46,45,49,50,51,47,35,48,29,33)]
+CAD_f = CAD_f[,c(38,41,44,46,45,49,50,51,47,35,48,29,33)]
 head(CAD_f)
 names(CAD_f) = c("rsID","chr","pos_b37","OA","EA",
-               "phenotype","setting","EAF","nSamples","beta","se","pval")
+               "phenotype","setting","source","EAF","nSamples","beta","se","pval")
 
 #' Sanity check
 matched = match(ExposureData$rsID,CAD_f$rsID)
@@ -345,11 +366,12 @@ CAD_a[EA != toupper(Allele1), beta2 := beta2*(-1)]
 #' Get all relevant columns
 CAD_a[,phenotype := "CAD"]
 CAD_a[,setting := "all"]
-names(CAD_a)[c(23,2,3,25,24,28,29,26,20,18,27,11,12)]
-CAD_a = CAD_a[,c(23,2,3,25,24,28,29,26,20,18,27,11,12)]
+CAD_a[,source := "Aragam et al."]
+names(CAD_a)[c(23,2,3,25,24,28,29,30,26,20,18,27,11,12)]
+CAD_a = CAD_a[,c(23,2,3,25,24,28,29,30,26,20,18,27,11,12)]
 head(CAD_a)
 names(CAD_a) = c("rsID","chr","pos_b37","OA","EA",
-                 "phenotype","setting","EAF","nSamples","nCases","beta","se","pval")
+                 "phenotype","setting","source","EAF","nSamples","nCases","beta","se","pval")
 
 #' Sanity check
 matched = match(ExposureData$rsID,CAD_a$rsID)
@@ -399,6 +421,13 @@ ExposureData[!is.element(rsID,SNPList[flag==T,rsID]),max(absZScore),by=c("phenot
 #' 
 ExposureData = ExposureData[rsID %in% SNPList[flag==T,rsID],]
 
+BCAC[,geneticModel := "additive"]
+BC[,geneticModel := "additive"]
+PLD[,geneticModel := "additive"]
+CAD_a[,geneticModel := "additive"]
+CAD_f[,geneticModel := "additive"]
+BCS[,geneticModel := "recessive"]
+
 OutcomeData = rbind(BCAC,BCS, BC, PLD, CAD_f, CAD_a,fill=T)
 OutcomeData = OutcomeData[rsID %in% SNPList[flag==T,rsID],]
 
@@ -412,14 +441,15 @@ matched = match(ExposureData$rsID,OutcomeData[phenotype=="BC",rsID])
 table(is.na(matched))
 table(ExposureData$rsID == OutcomeData[phenotype=="BC",rsID][matched])
 ExposureData[,pos_b38 := OutcomeData[phenotype=="BC",pos_b38][matched]]
-ExposureData = ExposureData[,c(1,3,4,14,5:13,15)]
+ExposureData = ExposureData[,c(1,3,4,16,5:8,14,15,9:13,17,18)]
 
 OutcomeData[,table(rsID %in% ExposureData$rsID)]
 matched = match(OutcomeData$rsID,ExposureData[,rsID])
 table(is.na(matched))
 table(OutcomeData$rsID == ExposureData[,rsID][matched])
 OutcomeData[,pos_b38 := ExposureData[,pos_b38][matched]]
-OutcomeData = OutcomeData[,c(1:3,14,4:13)]
+OutcomeData = OutcomeData[,c(1:3,16,4:7,14,15,8:13)]
+OutcomeData[,outcomeID := paste(phenotype,setting,source,geneticModel,sep=" - ")]
 
 #' # Save data ####
 #' ***

@@ -35,10 +35,10 @@ load("../results/02_Exposure_for_MR.RData")
 ExposureData
 
 GTEx = copy(ExposureData)
-GTEx = GTEx[phenotype == "PCSK9 gene expression" & !grepl("ratio",setting),]
+GTEx = GTEx[phenotype == "PCSK9 GE levels" & !grepl("rs562556",MRapproach),]
 
 LDLC = copy(ExposureData)
-LDLC = LDLC[phenotype == "LDL-C levels"  & !grepl("ratio",setting), ]
+LDLC = LDLC[phenotype == "LDL-C levels"  & !grepl("rs562556",MRapproach), ]
 
 #' # LD pruning for GTEx ####
 #' ***
@@ -47,9 +47,7 @@ LDLC = LDLC[phenotype == "LDL-C levels"  & !grepl("ratio",setting), ]
 GTEx[,.N,setting]
 
 myTissues = GTEx[,unique(setting)]
-myTissues2 = gsub("[()]","",myTissues)
-myTissues2 = gsub(" - ","_",myTissues2)
-myTissues2 = gsub(" ","_",myTissues2)
+myTissues2 = gsub(" ","_",myTissues)
 myTissues2
 
 for(i in 1:length(myTissues2)){
@@ -58,7 +56,7 @@ for(i in 1:length(myTissues2)){
   data = data[setting == myTissues[i],]
 
   filename = paste0("../temp/FUMA_input/SNPList_",myTissues2[i],".txt")
-  write.table(data[,c(1,2,3,5,6,9:13)],file = filename,
+  write.table(data[,c(1,2,3,5,6,11:15)],file = filename,
               col.names = T,row.names = F,quote = F)
 }
 
@@ -98,10 +96,10 @@ dumTab2 = foreach(i = 1:length(mySettings))%do%{
   # get PCSK9 and HMGCR specific sets
   data2 = copy(data)
   data2 = data2[rsID %in% mySNPs_PCSK9$V1,]
-  data2[,setting := paste(setting, "PCSK9 SNPs")]
+  data2[,instrumentLocus := "PCSK9"]
   data3 = copy(data)
   data3 = data3[rsID %in% mySNPs_HMGCR$V1,]
-  data3[,setting := paste(setting, "HMGCR SNPs")]
+  data3[,instrumentLocus := "HMGCR"]
   
   # do pruning
   myChrs = unique(as.numeric(data$chr))
@@ -149,24 +147,25 @@ dumTab2 = foreach(i = 1:length(mySettings))%do%{
   }
   data1 = rbindlist(dumTab4)
   data1 = data1[NR_SNPs>9,]
-  data1[,setting := paste(setting, "gw SNPs")]
+  data1[,instrumentLocus := "genome-wide"]
   
   # return
-  data1 = data1[,c(1:14)]
+  data1 = data1[,c(1:17,20)]
   data5 = rbind(data1,data2,data3)
   data5
 }
 LDLC_pruned = rbindlist(dumTab2)
 LDLC[,.N,setting]
-LDLC_pruned[,.N,setting]
+LDLC_pruned[,.N,by = c("setting","instrumentLocus")]
 
 #' # Save data ####
 #' ***
-ExposureData = ExposureData[!(phenotype == "PCSK9 gene expression" & !grepl("ratio",setting)),]
-ExposureData = ExposureData[!(phenotype == "LDL-C levels" & !grepl("ratio",setting)),]
-
+ExposureData = ExposureData[!(phenotype == "PCSK9 GE levels" & !grepl("rs562556",MRapproach)),]
+ExposureData = ExposureData[!(phenotype == "LDL-C levels" & !grepl("rs562556",MRapproach)),]
+ExposureData[,instrumentLocus := "PCSK9"]
+GTEx_pruned[,instrumentLocus := "PCSK9"]
 ExposureData = rbind(ExposureData,GTEx_pruned,LDLC_pruned)
-ExposureData[,.N,by = c("phenotype","setting")]
+ExposureData[,.N,by = c("phenotype","setting","MRapproach","instrumentLocus")]
 
 save(ExposureData,file = "../results/03_Exposure_for_MR_pruned.RData")
 
