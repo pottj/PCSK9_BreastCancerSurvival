@@ -32,7 +32,7 @@ Publication in December 2024 from [Wenbin Mei et al.](https://doi.org/10.1016/j.
 
 - Breast cancer survival (females) - Consortium: 
     - publication: [Morra et al., 2021](https://breast-cancer-research.biomedcentral.com/articles/10.1186/s13058-021-01450-7)
-    - data: [BCAC](http://bcac.ccge.medschl.cam.ac.uk); **please note**: website no longer working, data available upon request 
+    - data: [BCAC](https://www.ccge.medschl.cam.ac.uk/breast-cancer-association-consortium-bcac/data-data-access/summary-results/gwas-summary-results-0)
 - Breast cancer survival (females) - FinnGen: 
     - data requested in collaboration with Johannes Kettunen & Ville Salo
     - additive model for all relevant instruments
