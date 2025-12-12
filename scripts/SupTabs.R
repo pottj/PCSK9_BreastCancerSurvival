@@ -41,8 +41,8 @@ stab0 = data.table(Table = paste0("S",1:6),
                    Title = c("Instruments and exposure association for the MR approaches",
                              "Instruments and expoures association for the MVMR approach",
                              "Instruments and outcome associations for both MR and MVMR approaches",
-                             "Results of the MR analyses using genome-wide significant instrumets",
                              "Results of the MR-ratio using rs562556", 
+                             "Results of the MR analyses using genome-wide significant instrumets",
                              "Results of the MVMR analyses"))
 
 #' # Sup Tab 1 ####
@@ -55,6 +55,9 @@ ExposureData
 stab1 = copy(ExposureData)
 setnames(stab1,"phenotype","exposure")
 setorder(stab1,-exposure,setting,chr,pos_b37)
+names(stab1)
+stab1 = stab1[,c(1:10,18,11:16)]
+head(stab1)
 
 #' # Sup Tab 2 ####
 #' ***
@@ -64,6 +67,7 @@ load("../results/05_MVMR_input.RData")
 ExposureData_MVMR
 
 stab2 = copy(ExposureData_MVMR)
+names(stab2)
 
 #' Add some missing columns (Z-Score, position in b38)
 stab2[,exp1_absZScore := abs(exp1_beta/exp1_se)]
@@ -71,27 +75,16 @@ stab2[,exp2_absZScore := abs(exp2_beta/exp2_se)]
 matched = match(stab2$rsID,stab1$rsID)
 stopifnot(is.na(matched)==F)
 stab2[,pos_b38 := stab1[matched,pos_b38]]
+stab2[,exposure1 := gsub("protein","PE",exposure1)]
 
 #' Add flags to indicate which SNP was used for what analysis
-stab2[,flag1_PCSK9_v1 := F]
-stab2[rsID %in% stab1[exposure == "PCSK9 protein levels" & !grepl("ratio",setting),rsID],flag1_PCSK9_v1 := T]
-stab2[,flag2_PCSK9_v2 := F]
-stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting == "females PCSK9 SNPs",rsID] & setting == "females",flag2_PCSK9_v2 := T]
-stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting == "all PCSK9 SNPs",rsID] & setting == "all",flag2_PCSK9_v2 := T]
-stab2[,flag3_PCSK9_HMGCR := F]
-stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting %in% c("females PCSK9 SNPs","females HMGCR SNPs"),rsID] & setting == "females",flag3_PCSK9_HMGCR := T]
-stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting %in% c("all PCSK9 SNPs","all HMGCR SNPs"),rsID] & setting == "all",flag3_PCSK9_HMGCR := T]
-stab2[,flag4_genome_wide := F]
-stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting %in% c("females gw SNPs"),rsID] & setting == "females",flag4_genome_wide := T]
-stab2[rsID %in% stab1[exposure == "LDL-C levels" & setting %in% c("all gw SNPs"),rsID] & setting == "all",flag4_genome_wide := T]
-stab2 = stab2[flag1_PCSK9_v1==T | flag2_PCSK9_v2==T | flag3_PCSK9_HMGCR==T | flag4_genome_wide==T,]
+stab2[,flag1_PCSK9 := F]
+stab2[rsID %in% stab1[exposure == "PCSK9 PE levels" & MRapproach == "QTL",rsID],flag1_PCSK9 := T]
+stab2[,table(flag1_PCSK9)]
 
-stab2[,flag4_genome_wide := NULL]
-stab2[,flag2_PCSK9_v2 := NULL]
-stab2 = stab2[flag1_PCSK9_v1==T | flag3_PCSK9_HMGCR==T,]
-
-setnames(stab2,"flag1_PCSK9_v1","flag1_PCSK9")
-setnames(stab2,"flag3_PCSK9_HMGCR","flag2_PCSK9_HMGCR")
+stab2[,flag2_PCSK9_HMGCR := F]
+stab2[rsID %in% stab1[exposure == "LDL-C levels" & MRapproach == "QTL" & instrumentLocus != "genome-wide",rsID],flag2_PCSK9_HMGCR := T]
+stab2[,table(flag2_PCSK9_HMGCR)]
 
 #' Change order 
 names(stab2)
@@ -111,12 +104,8 @@ stab3[,absZScore := abs(beta/se)]
 setnames(stab3,"phenotype","outcome")
 setorder(stab3,outcome,setting,chr,pos_b37)
 
-stab3[setting == "all", setting := "Aragam et al. sex-combined"]
-stab3[setting == "females", setting := "Aragam et al. females"]
-stab3[setting == "UKB", setting := "Pilling et al. sex-combined"]
-stab3[grepl("BC",outcome), setting := paste(setting,"females")]
-stab3[,setting := gsub("BCAC","Morra et al.",setting)]
-
+names(stab3)
+stab3 = stab3[,c(1:8,10,11:16,9,18)]
 stab3[,beta_type := "linear effect"]
 stab3[outcome %in% c("BC","CAD"),beta_type := "log(OR)"]
 stab3[outcome %in% c("BCS"),beta_type := "log(HR)"]
@@ -130,36 +119,60 @@ stab3[outcome == "PLD",outcome := "Parental Longevity (combined parental age at 
 stab3 = stab3[rsID %in% stab1$rsID,]
 stopifnot(stab2$rsID %in% stab3$rsID)
 
+stab3[,source := gsub("Mei et al.","meta-analysis",source)]
+
 #' # Sup Tab 4 ####
 #' ***
 #' MR-IVW results 
 #' 
 load("../results/04_MR.RData")
 MRTab
+
+dummy1 = unlist(strsplit(MRTab$exposure," - "))
+MRTab[,exposursSetting := dummy1[seq(2,length(dummy1),4)]]
+MRTab[,exposureInstruments := dummy1[seq(3,length(dummy1),4)]]
+MRTab[,exposureApproach:= dummy1[seq(4,length(dummy1),4)]]
+MRTab[,exposure := dummy1[seq(1,length(dummy1),4)]]
+
+dummy2 = unlist(strsplit(MRTab$outcome," - "))
+MRTab[,outcomeSex := dummy2[seq(2,length(dummy2),4)]]
+MRTab[,outcomeSource := dummy2[seq(3,length(dummy2),4)]]
+MRTab[,outcomeModel:= dummy2[seq(4,length(dummy2),4)]]
+MRTab[,outcome := dummy2[seq(1,length(dummy2),4)]]
+
 MRTab[,pval_adj := p.adjust(p=pval,method = "fdr")]
+MRTab[outcome == "CAD",outcome := "Coronary Artery Disease"]
+MRTab[outcome == "BC",outcome := "Breast Cancer"]
+MRTab[outcome == "BCS",outcome := "Breast Cancer Survival"]
+MRTab[outcome == "PLD",outcome := "Parental Longevity (combined parental age at death)"]
 
-MRTab[outcome == "BC - FinnGen + UKB", outcome := "Breast Cancer - females"]
-MRTab[outcome == "BCS - BCAC", outcome := "Breast Cancer Survival - females - Morra et al."]
-MRTab[outcome == "BCS - FinnGen", outcome := "Breast Cancer Survival - females - FinnGen"]
-MRTab[outcome == "BCS - FinnGen_rec", outcome := "Breast Cancer Survival - females - FinnGen - recessive SNP effect"]
-MRTab[outcome == "BCS - Mei et al.", outcome := "Breast Cancer Survival - females - Mei at al."]
-MRTab[outcome == "CAD - all", outcome := "Coronary Artery Disease - all"]
-MRTab[outcome == "CAD - females", outcome := "Coronary Artery Disease - females"]
-MRTab[outcome == "PLD - UKB", outcome := "Parental Longevity - all"]
+names(MRTab)
+MRTab = MRTab[, c(1,11:13,2,14:16,3:7,17,8:10)]
 
+#' S4: MR-ratio table
 stab4 = copy(MRTab)
-stab4 = stab4[!grepl("ratio",exposure)]
-stab4 = stab4[,c(1:7,11,8:10)]
+stab4 = stab4[exposureApproach == "rs562556",]
 
-#' # Sup Tab 5 ####
-#' ***
-#' MR-ratio results for rs562556
+#' remove columns that are always the same (or NA)
 #' 
-stab5 = copy(MRTab)
-stab5 = stab5[grepl("ratio",exposure)]
+stab4[,exposureInstruments := NULL]
+stab4[,exposureApproach := NULL]
+stab4[,nSNPs := NULL]
+stab4[,method := NULL]
+stab4[,Q := NULL]
+stab4[,pval_Q := NULL]
+stab4[,outcomeSource := gsub("Mei et al.","meta-analysis",outcomeSource)]
+stab4
 
-stab5 = stab5[,c(1,2,5:7,11,8)]
-stab5[,exposure := gsub(" ratio","",exposure)]
+#' S5: MR-IVW table
+stab5 = copy(MRTab)
+stab5 = stab5[exposureApproach != "rs562556",]
+
+#' remove columns that are always the same (or NA)
+#' 
+stab5[,exposureApproach := NULL]
+stab5[,outcomeModel := NULL]
+stab5
 
 #' # Sup Tab 6 ####
 #' ***
@@ -167,24 +180,24 @@ stab5[,exposure := gsub(" ratio","",exposure)]
 #' 
 load("../results/05_MVMR.RData")
 MVMRTab
-MVMRTab[,pval_adj1 := p.adjust(p=pval_exp1,method = "fdr")]
-MVMRTab[,pval_adj2 := p.adjust(p=pval_exp2,method = "fdr")]
+MVMRTab[,pval_adj_exp1 := p.adjust(p=pval_exp1,method = "fdr")]
+MVMRTab[,pval_adj_exp2 := p.adjust(p=pval_exp2,method = "fdr")]
+
+dummy2 = unlist(strsplit(MVMRTab$outcome," - "))
+MVMRTab[,outcomeSex := dummy2[seq(2,length(dummy2),4)]]
+MVMRTab[,outcomeSource := dummy2[seq(3,length(dummy2),4)]]
+MVMRTab[,outcome := dummy2[seq(1,length(dummy2),4)]]
+MVMRTab[outcome == "CAD",outcome := "Coronary Artery Disease"]
+MVMRTab[outcome == "BC",outcome := "Breast Cancer"]
+MVMRTab[outcome == "BCS",outcome := "Breast Cancer Survival"]
+MVMRTab[outcome == "PLD",outcome := "Parental Longevity (combined parental age at death)"]
+
+names(MVMRTab)
 
 stab6 = copy(MVMRTab)
-stab6[outcome == "BC - FinnGen + UKB", outcome := "Breast Cancer - females"]
-stab6[outcome == "BCS - FinnGen", outcome := "Breast Cancer Survival - females - FinnGen"]
-stab6[outcome == "BCS - BCAC", outcome := "Breast Cancer Survival - females - Morra et al."]
-stab6[outcome == "CAD - all", outcome := "Coronary Artery Disease - all"]
-stab6[outcome == "CAD - females", outcome := "Coronary Artery Disease - females"]
-stab6[outcome == "PLD - UKB", outcome := "Parental Longevity - all"]
-
-setnames(stab6,"sex","exposure_sex")
-setnames(stab6,"SNPset","flag")
-stab6 = stab6[flag %in% c("PCSK9_v1","PCSK9_HMGCR")]
-stab6[flag == "PCSK9_v1", flag := "flag1_PCSK9"]
-stab6[flag == "PCSK9_HMGCR", flag := "flag2_PCSK9_HMGCR"]
-
-stab6 = stab6[,c(1,3,4,2,5:8,17,9:13,18,14:16)]
+stab6 = stab6[,c(1,19,20,2:8,17,9:13,18,14:16)]
+setnames(stab6,"sex","exposureSex")
+setnames(stab6,"SNPset","instrumentLocus")
 setnames(stab6,"NR_SNPs_total","nSNPs")
 setnames(stab6,"SE_exp1","se_exp1")
 setnames(stab6,"SE_exp2","se_exp2")
@@ -196,9 +209,9 @@ setnames(stab6,"HeteroStat_pval","pval_Q")
 #' # Save ####
 #' ***
 #' 
-myList = list(stab0,stab1,stab2,stab3,stab5,stab4,stab6)
+myList = list(stab0,stab1,stab2,stab3,stab4,stab5,stab6)
 write_xlsx(x = myList, 
-           path = paste0("../results/SupTables.xlsx"),col_names = T,format_headers = T)
+           path = paste0("../results/SupTables.xlsx"),col_names = T,format_headers= F)
 save(stab1,stab2,stab3,stab4,stab5,stab6,file = "../results/SupTables.RData")
 
 #' # Session Info ####
