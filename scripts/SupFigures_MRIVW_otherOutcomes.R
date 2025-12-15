@@ -135,6 +135,37 @@ png(filename = filename,width = 2200, height = 1400, res=200)
 plot(p2b)
 dev.off()
 
+plotData4 = copy(plotData1)
+plotData4 = plotData4[gene == "PCSK9" & !grepl("GE",type) & grepl("PCSK9",type),]
+setorder(plotData4,Outcome,setting,outcomeSource)
+
+p2c = plotData4 |>
+  forestplot(labeltext = c(Outcome, outcomeSource,setting, CI, FStat2),
+             boxsize = 0.25,
+             xticks = seq(from = 0, to = 1, by = 0.25),
+             xlab = "logOR (95% CI) for BC or CAD Risk per 1-SD increment in PCSK9 levels",
+             #clip = c(-1.7,1),
+             #xlog = TRUE,
+             vertices = TRUE,
+             txt_gp = fpTxtGp(
+               ticks = gpar(cex = 1),
+               xlab = gpar(cex = 1))) |>
+  fp_add_header(outcomeSource = c("Outcome\nsource\n"),
+                Outcome = c("Outcome\n\n"),
+                setting = c("Exposure\nsex\n"),
+                CI = c("log(OR) (95% CI)\n"),
+                FStat2 = c("F-Stat\n")) |>
+  fp_set_zebra_style("#EFEFEF") |>
+  fp_add_lines() |>
+  fp_decorate_graph(graph.pos = 4)
+
+plot(p2c)
+
+filename = paste0("../results/SupplementalFigures/MRIVW_otherOutcomes_PE.png")
+png(filename = filename,width = 2000, height = 600, res=200)
+plot(p2c)
+dev.off()
+
 #' # Session Info ####
 #' ***
 sessionInfo()
