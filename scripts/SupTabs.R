@@ -113,13 +113,13 @@ stab3[outcome %in% c("BCS"),beta_type := "log(HR)"]
 stab3[outcome == "CAD",outcome := "Coronary Artery Disease"]
 stab3[outcome == "BC",outcome := "Breast Cancer"]
 stab3[outcome == "BCS",outcome := "Breast Cancer Survival"]
-stab3[outcome == "PLD",outcome := "Parental Longevity (combined parental age at death)"]
+stab3 = stab3[outcome != "PLD",]
 
 #' Filter for SNPs in the exposure data sets
 stab3 = stab3[rsID %in% stab1$rsID,]
 stopifnot(stab2$rsID %in% stab3$rsID)
 
-stab3[,source := gsub("Mei et al.","meta-analysis",source)]
+stab3[,source := gsub("Mei et al.","Mei et al. - pooled",source)]
 
 #' # Sup Tab 4 ####
 #' ***
@@ -129,7 +129,7 @@ load("../results/04_MR.RData")
 MRTab
 
 dummy1 = unlist(strsplit(MRTab$exposure," - "))
-MRTab[,exposursSetting := dummy1[seq(2,length(dummy1),4)]]
+MRTab[,exposureSetting := dummy1[seq(2,length(dummy1),4)]]
 MRTab[,exposureInstruments := dummy1[seq(3,length(dummy1),4)]]
 MRTab[,exposureApproach:= dummy1[seq(4,length(dummy1),4)]]
 MRTab[,exposure := dummy1[seq(1,length(dummy1),4)]]
@@ -140,11 +140,11 @@ MRTab[,outcomeSource := dummy2[seq(3,length(dummy2),4)]]
 MRTab[,outcomeModel:= dummy2[seq(4,length(dummy2),4)]]
 MRTab[,outcome := dummy2[seq(1,length(dummy2),4)]]
 
+MRTab = MRTab[outcome != "PLD",]
 MRTab[,pval_adj := p.adjust(p=pval,method = "fdr")]
 MRTab[outcome == "CAD",outcome := "Coronary Artery Disease"]
 MRTab[outcome == "BC",outcome := "Breast Cancer"]
 MRTab[outcome == "BCS",outcome := "Breast Cancer Survival"]
-MRTab[outcome == "PLD",outcome := "Parental Longevity (combined parental age at death)"]
 
 names(MRTab)
 MRTab = MRTab[, c(1,11:13,2,14:16,3:7,17,8:10)]
@@ -161,7 +161,7 @@ stab4[,nSNPs := NULL]
 stab4[,method := NULL]
 stab4[,Q := NULL]
 stab4[,pval_Q := NULL]
-stab4[,outcomeSource := gsub("Mei et al.","meta-analysis",outcomeSource)]
+stab4[,outcomeSource := gsub("Mei et al.","Mei et al. - pooled",outcomeSource)]
 stab4
 
 #' S5: MR-IVW table
@@ -180,6 +180,8 @@ stab5
 #' 
 load("../results/05_MVMR.RData")
 MVMRTab
+MVMRTab = MVMRTab[!grepl("PLD",outcome),]
+
 MVMRTab[,pval_adj_exp1 := p.adjust(p=pval_exp1,method = "fdr")]
 MVMRTab[,pval_adj_exp2 := p.adjust(p=pval_exp2,method = "fdr")]
 
@@ -190,7 +192,6 @@ MVMRTab[,outcome := dummy2[seq(1,length(dummy2),4)]]
 MVMRTab[outcome == "CAD",outcome := "Coronary Artery Disease"]
 MVMRTab[outcome == "BC",outcome := "Breast Cancer"]
 MVMRTab[outcome == "BCS",outcome := "Breast Cancer Survival"]
-MVMRTab[outcome == "PLD",outcome := "Parental Longevity (combined parental age at death)"]
 
 names(MVMRTab)
 
